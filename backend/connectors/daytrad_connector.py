@@ -36,8 +36,8 @@ class DaytradConnector(BaseConnector):
 
     def _is_bridge_online(self) -> bool:
         """Check if local or network daytrad MT4/MT5 bridge is actively listening."""
-        candidate_hosts = [h for h in [os.getenv("DAYTRAD_HOST"), "127.0.0.1", "100.105.249.12"] if h]
-        ports = [self.bridge_port, 8000, 8080]
+        candidate_hosts = [h for h in [os.getenv("DAYTRAD_HOST"), "host.docker.internal", "100.105.249.12", "127.0.0.1"] if h]
+        ports = [self.bridge_port, 8000, 8001, 8080]
         for host in candidate_hosts:
             for port in ports:
                 # Avoid self-connection on 127.0.0.1:8000 if port is Hub itself
@@ -52,12 +52,12 @@ class DaytradConnector(BaseConnector):
                     pass
         return False
 
-    def _fetch_live_snapshot(self) -> Optional[Dict[str, Any]]:
-        """Attempt to fetch live snapshot telemetry from local bridge API or direct python fallback."""
-        candidate_hosts = [h for h in [os.getenv("DAYTRAD_HOST"), "127.0.0.1", "100.105.249.12"] if h]
-        ports = [self.bridge_port, 8000, 8080]
-
-        # 1. Probing network / bridge HTTP endpoint
+    def _fetch_all_snapshots(self) -> List[Dict[str, Any]]:
+        """Fetch snapshots from all active bridge ports (e.g. 8000 for Cent, 8001 for Demo)."""
+        candidate_hosts = [h for h in [os.getenv("DAYTRAD_HOST"), "host.docker.internal", "100.105.249.12", "127.0.0.1"] if h]
+        ports = [self.bridge_port, 8000, 8001, 8080]
+        results = []
+        seen_accounts = set()
         for host in candidate_hosts:
             for port in ports:
                 if host in ("127.0.0.1", "localhost") and port == 8000 and not os.getenv("DAYTRAD_PORT"):
@@ -69,9 +69,25 @@ class DaytradConnector(BaseConnector):
                         if response.status == 200:
                             data = json.loads(response.read().decode("utf-8"))
                             if isinstance(data, dict) and data.get("type") == "snapshot":
-                                return data
+                                acc_num = data.get("account", {}).get("account_number")
+                                if acc_num and acc_num not in seen_accounts:
+                                    seen_accounts.add(acc_num)
+                                    results.append({
+                                        "port": port,
+                                        "host": host,
+                                        "account": data.get("account", {}),
+                                        "portfolio": data.get("portfolio", {}),
+                                        "snapshot": data,
+                                    })
                 except Exception:
                     continue
+        return results
+
+    def _fetch_live_snapshot(self) -> Optional[Dict[str, Any]]:
+        """Attempt to fetch live snapshot telemetry from local bridge API or direct python fallback."""
+        all_snapshots = self._fetch_all_snapshots()
+        if all_snapshots:
+            return all_snapshots[0]["snapshot"]
 
         # 2. Local Python fallback via daytrad's feed_provider
         try:
@@ -188,8 +204,14 @@ class DaytradConnector(BaseConnector):
             balance = float(acc.get("balance", balance))
             equity = float(acc.get("equity", equity))
             floating_pnl = float(acc.get("floating_pnl", 0.0))
-            daily_pnl = float(portfolio.get("realized_pnl_usd", 0.0))
-            daily_pct = float(portfolio.get("daily_return_pct", 0.0))
+            starting_bal = float(portfolio.get("starting_balance", balance))
+            if starting_bal == 10000.0 and balance < 1000.0:
+                # Sanitize unscaled default baseline from older bridge code
+                daily_pnl = 0.0
+                daily_pct = 0.0
+            else:
+                daily_pnl = float(portfolio.get("realized_pnl_usd", 0.0))
+                daily_pct = float(portfolio.get("daily_return_pct", 0.0))
             account_num = str(acc.get("account_number", account_num))
             account_server = acc.get("server", account_server)
             account_mode = acc.get("mode", account_mode)
@@ -306,6 +328,7 @@ class DaytradConnector(BaseConnector):
             "specialists": specialists,
             "open_positions": open_positions,
             "closed_orders": closed_orders,
+            "active_accounts": self._fetch_all_snapshots(),
             "daily_target": {
                 "target_pct": 3.0,
                 "current_pct": summary.get("daily_return_pct", 0.0),

@@ -11,7 +11,12 @@ services:
     environment:
       - HUB_HOST=0.0.0.0
       - HUB_PORT=8000
+      - DAYTRAD_HOST=host.docker.internal
+      - DAYTRAD_PORT=8000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
+      - ./backend:/app/hub/backend
       - D:/daytrading:/app/daytrad:ro
       - D:/edca:/app/edca:ro
 

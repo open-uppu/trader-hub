@@ -42,10 +42,14 @@ DEFAULT_HOLDINGS_DATA = [
 # Curated Focus Watchlist for fast live scanning without blocking
 FOCUS_SCANNER_WATCHLIST = ["NVDA", "META", "MSFT", "AAPL", "VOO", "QQQ"]
 
-# Global in-memory cache for opportunities to avoid re-fetching Yahoo Finance on every request
+# Global in-memory cache for opportunities and advisory to avoid slow network blocking
 _CACHED_OPPS: List[Dict[str, Any]] = []
 _LAST_SCAN_TIME: float = 0.0
 _CACHE_TTL_SEC: float = 300.0  # 5 minutes cache
+
+_CACHED_ADVISORY: str = ""
+_LAST_ADVISORY_TIME: float = 0.0
+_ADVISORY_TTL_SEC: float = 600.0  # 10 minutes cache
 
 
 class EdcaConnector(BaseConnector):
@@ -199,7 +203,14 @@ class EdcaConnector(BaseConnector):
                     }
                     for a in allocations
                 ]
-                advisory_text = generate_weekly_advisory(plan, allocations, trading_day_str)
+                global _CACHED_ADVISORY, _LAST_ADVISORY_TIME
+                now_ts = datetime.datetime.now().timestamp()
+                if _CACHED_ADVISORY and (now_ts - _LAST_ADVISORY_TIME) < _ADVISORY_TTL_SEC:
+                    advisory_text = _CACHED_ADVISORY
+                else:
+                    advisory_text = generate_weekly_advisory(plan, allocations, trading_day_str)
+                    _CACHED_ADVISORY = advisory_text
+                    _LAST_ADVISORY_TIME = now_ts
             except Exception as e:
                 advisory_text = f"ระบบประมวลผลพื้นฐาน: แนะนำเข้าซื้อตามน้ำหนักพอร์ตปกติ ({str(e)})"
 

@@ -226,6 +226,93 @@ export default function EdcaPage() {
         </div>
       </div>
 
+      {/* Full Asset Ranking & Queue Leaderboard */}
+      {weekly_execution.allocations && weekly_execution.allocations.length > 0 && (
+        <div className="p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-amber-400" />
+              <h3 className="text-lg font-bold text-white">
+                กระดานจัดอันดับความน่าสนใจและการจัดสรรคิว (Asset Ranking & Queue Leaderboard)
+              </h3>
+            </div>
+            <span className="text-xs text-zinc-400 font-mono">
+              {weekly_execution.allocations.length} Assets Evaluated
+            </span>
+          </div>
+
+          <p className="text-xs text-zinc-400">
+            ระบบจัดอันดับหุ้นทุกตัวในพอร์ตและเรดาร์ตามส่วนลดราคา (Drawdown + Factor Score) โดยจัดสรรงบให้หุ้นอันดับสูงสุดตามขนาดเงินทุน และควบคุมไม่ให้ต่ำกว่า 50 บาท (Dime!) ส่วนหุ้นอันดับถัดไปจะเข้าคิวรอจัดสรรในสัปดาห์ถัดไป
+          </p>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs font-mono">
+              <thead className="bg-zinc-950 text-zinc-400 border-b border-zinc-800">
+                <tr>
+                  <th className="py-3 px-4">อันดับ / สินทรัพย์</th>
+                  <th className="py-3 px-4">สถานะการตัดสินใจ</th>
+                  <th className="py-3 px-4 text-right">งบจัดสรร (THB)</th>
+                  <th className="py-3 px-4 text-right">สัดส่วนงบ (%)</th>
+                  <th className="py-3 px-4">เหตุผลและคะแนนกลยุทธ์</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800/80">
+                {weekly_execution.allocations.map((item, idx) => {
+                  const isAllocated = item.allocated_thb > 0;
+                  const isNew = item.action.includes("NEW ENTRY");
+                  const isQueue = item.action.includes("QUEUE");
+
+                  return (
+                    <tr 
+                      key={item.ticker} 
+                      className={`transition-colors ${
+                        isAllocated 
+                          ? "bg-emerald-500/5 hover:bg-emerald-500/10 font-medium" 
+                          : "hover:bg-zinc-900/50 text-zinc-400"
+                      }`}
+                    >
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold ${
+                            isAllocated ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-zinc-800 text-zinc-400"
+                          }`}>
+                            {idx + 1}
+                          </span>
+                          <span className="font-bold text-white text-sm">{item.ticker}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                          isNew ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40" :
+                          isAllocated ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" :
+                          isQueue ? "bg-amber-500/10 text-amber-300 border border-amber-500/20" :
+                          "bg-zinc-800 text-zinc-400"
+                        }`}>
+                          {item.action}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <span className={`font-bold ${isAllocated ? "text-emerald-400 text-sm" : "text-zinc-500"}`}>
+                          {item.allocated_thb > 0 ? `฿${item.allocated_thb.toLocaleString()}` : "-"}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <span className={isAllocated ? "text-zinc-200" : "text-zinc-500"}>
+                          {item.percentage > 0 ? `${item.percentage}%` : "-"}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-zinc-300 font-sans text-xs">
+                        {item.reason}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Market Opportunity Radar (New Stock Candidates from Market Scanner) */}
       {scanner_opportunities && scanner_opportunities.length > 0 && (
         <div className="p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800 space-y-4">

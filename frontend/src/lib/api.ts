@@ -8,8 +8,9 @@ export function getApiBase(): string {
 
     // If accessed via Tailscale IP or remote domain (e.g. 100.105.249.12)
     if (host !== "localhost" && host !== "127.0.0.1") {
-      // In Docker deployment, Backend is published on host port 8005
-      return `${protocol}//${host}:8005`;
+      // Same origin: next.config.js rewrites /api/* to hub_backend. A cross-port
+      // call to :8005 from a remote page is blocked by the browser ("Failed to fetch").
+      return "";
     }
 
     // If accessed locally on port 3000, check if backend is 8005 or 8000

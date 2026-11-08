@@ -223,11 +223,11 @@ class DaytradConnector(BaseConnector):
             "symbols_list": [s["symbol"] for s in SUPPORTED_SPECIALISTS],
             "specialists_count": len(SUPPORTED_SPECIALISTS),
             "target_profit_pct": 3.0,
-            "max_daily_loss_pct": 2.0,
+            "max_daily_loss_pct": 5.0,
             "base_capital_usd": balance,
             "current_equity_usd": equity,
             "daily_target_usd": round(balance * 0.03, 2),
-            "max_loss_usd": round(balance * 0.02, 2),
+            "max_loss_usd": round(balance * 0.05, 2),
             "daily_pnl_usd": daily_pnl,
             "daily_return_pct": daily_pct,
             "floating_pnl_usd": floating_pnl,
@@ -332,12 +332,12 @@ class DaytradConnector(BaseConnector):
             "daily_target": {
                 "target_pct": 3.0,
                 "current_pct": summary.get("daily_return_pct", 0.0),
-                "cutoff_pct": -2.0,
+                "cutoff_pct": -5.0,
                 "status": summary["execution_status"]["state"],
                 "rules": [
                     "เมื่อกำไรสะสมถึง 3.0% ระบบจะล็อกกำไรและลดความเสี่ยงทันที (Soft Target Lock)",
                     "หากกำไรแตะ 20.0% จะปิดระบบล็อกกำไรทั้งพอร์ต (Hard Target Lock)",
-                    "หากขาดทุนแตะ -2.0% ระบบจะหยุดเปิดออเดอร์ใหม่เพื่อรักษาทุน (Hard Stop)"
+                    "หากขาดทุนแตะ -5.0% ระบบจะหยุดเปิดออเดอร์ใหม่เพื่อรักษาทุน (Hard Stop)"
                 ]
             },
             "charts": charts[:12],

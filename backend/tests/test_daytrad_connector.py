@@ -23,7 +23,7 @@ def test_daytrad_connector_summary():
     assert "target_profit_pct" in summary
     assert summary["target_profit_pct"] == 3.0
     assert "max_daily_loss_pct" in summary
-    assert summary["max_daily_loss_pct"] == 2.0
+    assert summary["max_daily_loss_pct"] == 5.0
     assert "kpis" in summary
     # Multi-asset verification
     assert summary["specialists_count"] == 9

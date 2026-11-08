@@ -125,7 +125,7 @@ function DailyTargetRadialRing({ currentPct, targetPct, cutoffPct, balance }: {
             strokeLinecap="round" fill="transparent" className="transition-all duration-1000 ease-out" 
           />
 
-          {/* Ring 2 Track & Progress (Max Loss Cutoff -2%) */}
+          {/* Ring 2 Track & Progress (Max Loss Cutoff -5%) */}
           <circle cx="70" cy="70" r={ring2Radius} stroke="#ff453a" strokeOpacity="0.15" strokeWidth="9" fill="transparent" />
           <circle 
             cx="70" cy="70" r={ring2Radius} 
@@ -164,9 +164,9 @@ function DailyTargetRadialRing({ currentPct, targetPct, cutoffPct, balance }: {
         <div className="flex items-center justify-between pb-1.5 border-b border-white/[0.04]">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-[#ff453a]" />
-            <span className="text-neutral-300 font-medium">Max Loss Guardrail (-2.0%)</span>
+            <span className="text-neutral-300 font-medium">Max Loss Guardrail (-5.0%)</span>
           </div>
-          <span className="font-mono text-[#ff453a] font-semibold">-${(balance * 0.02).toFixed(2)} USD</span>
+          <span className="font-mono text-[#ff453a] font-semibold">-${(balance * 0.05).toFixed(2)} USD</span>
         </div>
 
         <div className="flex items-center justify-between">

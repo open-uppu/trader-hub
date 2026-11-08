@@ -751,7 +751,7 @@ export default function DaytradPage() {
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
                 {closed_orders.map((ord: any, idx: number) => {
-                  const pnl = Number(ord.profit || 0);
+                  const pnl = Number(ord.pnl_usd ?? ord.profit ?? 0);
                   const isBuy = String(ord.type).toUpperCase().includes("BUY") || ord.type === 0;
                   return (
                     <tr key={idx} className="hover:bg-white/[0.02]">

@@ -51,3 +51,6 @@ def test_daytrad_connector_details():
     assert isinstance(details["open_positions"], list)
     assert "execution_status" in details
     assert details["execution_status"]["state"] in ("IN_POSITION", "WAITING", "STANDBY")
+    assert "account" in details
+    assert "balance" in details["account"]
+    assert "equity" in details["account"]

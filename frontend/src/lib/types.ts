@@ -119,7 +119,22 @@ export interface ExecutionStatus {
   mode?: string;
 }
 
+export interface AccountTelemetry {
+  account_number: string | number;
+  server: string;
+  mode: string;
+  balance: number;
+  equity: number;
+  floating_pnl: number;
+  realized_pnl: number;
+  daily_return_pct: number;
+  connected: boolean;
+  last_sync: string;
+}
+
 export interface DaytradDetails {
+  account?: AccountTelemetry;
+  portfolio?: any;
   summary: {
     symbol: string;
     symbols_list?: string[];
@@ -132,6 +147,8 @@ export interface DaytradDetails {
     max_loss_usd: number;
     daily_pnl_usd?: number;
     daily_return_pct?: number;
+    floating_pnl_usd?: number;
+    account?: AccountTelemetry;
     bot_status: string;
     charts_available: number;
     execution_status?: ExecutionStatus;

@@ -2,6 +2,7 @@ import os
 import socket
 import json
 import urllib.request
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
@@ -34,29 +35,56 @@ class DaytradConnector(BaseConnector):
         self.journal_dir = DAYTRAD_DIR / "journal"
 
     def _is_bridge_online(self) -> bool:
-        """Check if local daytrad MT4/MT5 bridge is actively listening."""
-        for port in [self.bridge_port, 8000]:
-            try:
-                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                    s.settimeout(0.2)
-                    if s.connect_ex(("127.0.0.1", port)) == 0:
-                        return True
-            except Exception:
-                pass
+        """Check if local or network daytrad MT4/MT5 bridge is actively listening."""
+        candidate_hosts = [h for h in [os.getenv("DAYTRAD_HOST"), "127.0.0.1", "100.105.249.12"] if h]
+        ports = [self.bridge_port, 8000, 8080]
+        for host in candidate_hosts:
+            for port in ports:
+                # Avoid self-connection on 127.0.0.1:8000 if port is Hub itself
+                if host in ("127.0.0.1", "localhost") and port == 8000 and not os.getenv("DAYTRAD_PORT"):
+                    continue
+                try:
+                    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                        s.settimeout(0.25)
+                        if s.connect_ex((host, port)) == 0:
+                            return True
+                except Exception:
+                    pass
         return False
 
     def _fetch_live_snapshot(self) -> Optional[Dict[str, Any]]:
-        """Attempt to fetch live snapshot telemetry from local bridge API."""
-        for port in [self.bridge_port, 8000]:
-            try:
-                url = f"http://127.0.0.1:{port}/api/dashboard/snapshot?symbol=XAUUSD&timeframe=M5"
-                req = urllib.request.Request(url, headers={"User-Agent": "TraderHubConnector/1.0"})
-                with urllib.request.urlopen(req, timeout=0.6) as response:
-                    if response.status == 200:
-                        data = json.loads(response.read().decode("utf-8"))
-                        return data
-            except Exception:
-                continue
+        """Attempt to fetch live snapshot telemetry from local bridge API or direct python fallback."""
+        candidate_hosts = [h for h in [os.getenv("DAYTRAD_HOST"), "127.0.0.1", "100.105.249.12"] if h]
+        ports = [self.bridge_port, 8000, 8080]
+
+        # 1. Probing network / bridge HTTP endpoint
+        for host in candidate_hosts:
+            for port in ports:
+                if host in ("127.0.0.1", "localhost") and port == 8000 and not os.getenv("DAYTRAD_PORT"):
+                    continue
+                try:
+                    url = f"http://{host}:{port}/api/dashboard/snapshot?symbol=XAUUSD&timeframe=M5"
+                    req = urllib.request.Request(url, headers={"User-Agent": "TraderHubConnector/1.0"})
+                    with urllib.request.urlopen(req, timeout=0.8) as response:
+                        if response.status == 200:
+                            data = json.loads(response.read().decode("utf-8"))
+                            if isinstance(data, dict) and data.get("type") == "snapshot":
+                                return data
+                except Exception:
+                    continue
+
+        # 2. Local Python fallback via daytrad's feed_provider
+        try:
+            import sys
+            daytrad_path = str(DAYTRAD_DIR)
+            if daytrad_path not in sys.path:
+                sys.path.insert(0, daytrad_path)
+            from frontend.feed_provider import DashboardFeedProvider
+            provider = DashboardFeedProvider()
+            return provider.get_snapshot("XAUUSD", "M5")
+        except Exception:
+            pass
+
         return None
 
     def _get_specialist_runtime_heartbeats(self) -> Dict[str, Any]:
@@ -142,18 +170,31 @@ class DaytradConnector(BaseConnector):
         snapshot = self._fetch_live_snapshot()
         exec_status = self._compute_execution_status(snapshot, status_info["online"])
 
-        # Determine balance and target details from snapshot or defaults
+        # Determine balance, equity, floating and target details from snapshot or defaults
         balance = 10000.0
         equity = 10000.0
+        floating_pnl = 0.0
         daily_pnl = 0.0
         daily_pct = 0.0
+        account_num = "99999999"
+        account_server = "PaperTrading-Simulation"
+        account_mode = "PAPER SIMULATION"
+        connected = status_info["online"]
+        last_sync = datetime.now(timezone.utc).isoformat()
+
         if snapshot:
             portfolio = snapshot.get("portfolio", {})
             acc = snapshot.get("account", {})
             balance = float(acc.get("balance", balance))
             equity = float(acc.get("equity", equity))
+            floating_pnl = float(acc.get("floating_pnl", 0.0))
             daily_pnl = float(portfolio.get("realized_pnl_usd", 0.0))
             daily_pct = float(portfolio.get("daily_return_pct", 0.0))
+            account_num = str(acc.get("account_number", account_num))
+            account_server = acc.get("server", account_server)
+            account_mode = acc.get("mode", account_mode)
+            connected = acc.get("connected", connected)
+            last_sync = acc.get("last_sync", last_sync)
 
         return {
             "symbol": "9 Multi-Assets (Gold, Crypto, FX, Energy)",
@@ -167,14 +208,29 @@ class DaytradConnector(BaseConnector):
             "max_loss_usd": round(balance * 0.02, 2),
             "daily_pnl_usd": daily_pnl,
             "daily_return_pct": daily_pct,
-            "bot_status": "ONLINE (Looping)" if status_info["online"] else "STANDBY (Squad Ready)",
+            "floating_pnl_usd": floating_pnl,
+            "bot_status": "ONLINE (Looping)" if connected else "STANDBY (Squad Ready)",
             "charts_available": chart_count,
             "execution_status": exec_status,
+            "account": {
+                "account_number": account_num,
+                "server": account_server,
+                "mode": account_mode,
+                "balance": balance,
+                "equity": equity,
+                "floating_pnl": floating_pnl,
+                "realized_pnl": daily_pnl,
+                "daily_return_pct": daily_pct,
+                "connected": connected,
+                "last_sync": last_sync
+            },
             "kpis": [
-                {"label": "พอร์ตหลัก (9 สินทรัพย์)", "value": f"{len(SUPPORTED_SPECIALISTS)} ตลาด (XAU, BTC, FX...)", "color": "amber"},
+                {"label": "มูลค่าพอร์ตสุทธิ (Equity)", "value": f"${equity:,.2f}", "color": "emerald" if equity >= balance else "rose"},
+                {"label": "เงินทุนคงเหลือ (Balance)", "value": f"${balance:,.2f}", "color": "cyan"},
                 {"label": "สถานะการเข้าซื้อ/ถือไม้", "value": exec_status["badge"], "color": exec_status["badge_color"]},
-                {"label": "เป้าหมายกำไรรายวัน", "value": f"+3.0% (${round(balance * 0.03):,.0f})", "color": "emerald"},
-                {"label": "คัทออฟขาดทุนสูงสุด", "value": f"-2.0% (${round(balance * 0.02):,.0f})", "color": "rose"},
+                {"label": "กำไรสะสมวันนี้ (Realized)", "value": f"{'+' if daily_pnl >= 0 else ''}${daily_pnl:,.2f} ({'+' if daily_pct >= 0 else ''}{daily_pct:.1f}%)", "color": "emerald" if daily_pnl >= 0 else "rose"},
+                {"label": "Floating PnL ไม้ที่ถืออยู่", "value": f"{'+' if floating_pnl >= 0 else ''}${floating_pnl:,.2f}", "color": "emerald" if floating_pnl > 0 else ("rose" if floating_pnl < 0 else "zinc")},
+                {"label": "เป้าหมายกำไรรายวัน", "value": f"+3.0% (+${round(balance * 0.03):,.0f})", "color": "amber"},
             ]
         }
 
@@ -244,6 +300,8 @@ class DaytradConnector(BaseConnector):
 
         return {
             "summary": summary,
+            "account": summary.get("account", {}),
+            "portfolio": snapshot.get("portfolio", {}) if snapshot else {},
             "execution_status": summary["execution_status"],
             "specialists": specialists,
             "open_positions": open_positions,

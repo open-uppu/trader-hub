@@ -83,6 +83,24 @@ class DaytradConnector(BaseConnector):
                     continue
         return results
 
+    def get_bars(self, symbol: str, timeframe: str = "M5") -> List[Dict[str, Any]]:
+        """OHLC bars for one symbol from the first bridge that answers with bars."""
+        candidate_hosts = [h for h in [os.getenv("DAYTRAD_HOST"), "host.docker.internal", "100.105.249.12", "127.0.0.1"] if h]
+        for host in candidate_hosts:
+            for port in [self.bridge_port, 8000, 8001, 8080]:
+                if host in ("127.0.0.1", "localhost") and port == 8000 and not os.getenv("DAYTRAD_PORT"):
+                    continue
+                try:
+                    url = f"http://{host}:{port}/api/dashboard/snapshot?symbol={symbol}&timeframe={timeframe}"
+                    req = urllib.request.Request(url, headers={"User-Agent": "TraderHubConnector/1.0"})
+                    with urllib.request.urlopen(req, timeout=0.8) as response:
+                        data = json.loads(response.read().decode("utf-8"))
+                    if isinstance(data, dict) and data.get("type") == "snapshot" and data.get("bars"):
+                        return data["bars"]
+                except Exception:
+                    continue
+        return []
+
     def _fetch_live_snapshot(self) -> Optional[Dict[str, Any]]:
         """Attempt to fetch live snapshot telemetry from local bridge API or direct python fallback."""
         all_snapshots = self._fetch_all_snapshots()

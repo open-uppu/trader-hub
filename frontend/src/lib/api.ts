@@ -89,6 +89,26 @@ export async function fetchDaytradDetails(): Promise<DaytradDetails | null> {
   }
 }
 
+export interface CandleBar {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+export async function fetchDaytradBars(symbol: string): Promise<CandleBar[]> {
+  try {
+    const res = await fetchWithFallback(`/api/v1/projects/daytrad/bars?symbol=${encodeURIComponent(symbol)}&timeframe=M5`);
+    const data = await res.json();
+    return Array.isArray(data.bars) ? data.bars : [];
+  } catch (err) {
+    console.error("fetchDaytradBars error:", err);
+    return [];
+  }
+}
+
 export function getChartImageUrl(filename: string): string {
   const base = getApiBase();
   return `${base}/api/v1/projects/daytrad/charts/${filename}`;

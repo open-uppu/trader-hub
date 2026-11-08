@@ -1,3 +1,4 @@
+import re
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from pathlib import Path
@@ -39,6 +40,19 @@ def get_project_details(project_id: str):
     if not connector:
         raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found")
     return connector.get_details()
+
+
+@router.get("/daytrad/bars")
+def get_daytrad_bars(symbol: str = "XAUUSD", timeframe: str = "M5"):
+    if not _registry:
+        raise HTTPException(status_code=500, detail="Registry not initialized")
+    connector = _registry.get("daytrad")
+    if not connector:
+        raise HTTPException(status_code=404, detail="Daytrad project not registered")
+    symbol, timeframe = symbol.upper(), timeframe.upper()
+    if not re.fullmatch(r"[A-Z0-9]{3,12}", symbol) or not re.fullmatch(r"M\d{1,3}|H\d{1,2}", timeframe):
+        raise HTTPException(status_code=400, detail="Invalid symbol or timeframe")
+    return {"symbol": symbol, "timeframe": timeframe, "bars": connector.get_bars(symbol, timeframe)}
 
 
 @router.get("/daytrad/charts")

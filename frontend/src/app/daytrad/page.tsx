@@ -22,68 +22,90 @@ import {
   ArrowUpRight,
   ArrowDownRight
 } from "lucide-react";
-import { fetchDaytradDetails, getChartImageUrl } from "@/lib/api";
+import { fetchDaytradDetails, fetchDaytradBars, getChartImageUrl, CandleBar } from "@/lib/api";
 import { DaytradDetails, ChartItem } from "@/lib/types";
 import { StatusBadge } from "@/components/StatusBadge";
 
-// TradingView Widget Embed Component (Zero Dependency, Full Real-Time Candles)
-function TradingViewCandleChart({ symbol }: { symbol: string }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const getTvSymbol = (sym: string) => {
-    switch (sym.toUpperCase()) {
-      case "XAUUSD": return "OANDA:XAUUSD";
-      case "BTCUSD": return "BINANCE:BTCUSDT";
-      case "ETHUSD": return "BINANCE:ETHUSDT";
-      case "XAGUSD": return "OANDA:XAGUSD";
-      case "EURUSD": return "FX:EURUSD";
-      case "GBPUSD": return "FX:GBPUSD";
-      case "UKOIL": return "TVC:UKOIL";
-      case "XNGUSD": return "TVC:NATGAS";
-      case "XPTUSD": return "OANDA:XPTUSD";
-      default: return "OANDA:XAUUSD";
-    }
-  };
+// Candlestick chart drawn from the Daytrad bridge's own M5 bars (no external widget)
+function CandleChart({ symbol }: { symbol: string }) {
+  const [bars, setBars] = useState<CandleBar[]>([]);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    if (!containerRef.current) return;
-    containerRef.current.innerHTML = "";
-    
-    const widgetContainer = document.createElement("div");
-    widgetContainer.className = "tradingview-widget-container__widget";
-    widgetContainer.style.height = "100%";
-    widgetContainer.style.width = "100%";
-    containerRef.current.appendChild(widgetContainer);
-
-    const script = document.createElement("script");
-    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
-    script.type = "text/javascript";
-    script.async = true;
-    script.innerHTML = JSON.stringify({
-      autosize: true,
-      symbol: getTvSymbol(symbol),
-      interval: "5",
-      timezone: "Asia/Bangkok",
-      theme: "dark",
-      style: "1",
-      locale: "en",
-      backgroundColor: "rgba(10, 10, 12, 1)",
-      gridColor: "rgba(255, 255, 255, 0.04)",
-      hide_top_toolbar: false,
-      hide_legend: false,
-      save_image: false,
-      calendar: false,
-      hide_volume: false,
-      support_host: "https://www.tradingview.com"
-    });
-    containerRef.current.appendChild(script);
+    let alive = true;
+    setLoaded(false);
+    const load = async () => {
+      const next = await fetchDaytradBars(symbol);
+      if (!alive) return;
+      setBars(next);
+      setLoaded(true);
+    };
+    load();
+    const timer = setInterval(load, 5000);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
   }, [symbol]);
 
-  return (
-    <div className="w-full h-[460px] bg-[#0a0a0c] rounded-2xl overflow-hidden border border-white/[0.08] relative" ref={containerRef}>
-      <div className="flex items-center justify-center h-full text-[#86868b] text-[12px] font-mono">
-        Loading TradingView Candlestick Engine ({symbol})...
+  const frame = "w-full h-[460px] bg-[#0a0a0c] rounded-2xl overflow-hidden border border-white/[0.08] flex items-center justify-center text-[#86868b] text-[12px] font-mono";
+  const view = bars.slice(-120);
+  if (view.length === 0) {
+    return (
+      <div className={frame}>
+        {loaded ? `ไม่มีข้อมูลแท่งเทียนของ ${symbol} (บริดจ์ออฟไลน์หรือตลาดปิด)` : `Loading ${symbol} M5 bars...`}
       </div>
+    );
+  }
+
+  const W = 800;
+  const H = 400;
+  const PAD_L = 8;
+  const PAD_R = 64;
+  const PAD_T = 12;
+  const PAD_B = 24;
+  const hi = Math.max(...view.map((b) => b.high));
+  const lo = Math.min(...view.map((b) => b.low));
+  const span = hi - lo || 1;
+  const y = (p: number) => PAD_T + ((hi - p) / span) * (H - PAD_T - PAD_B);
+  const slot = (W - PAD_L - PAD_R) / view.length;
+  const bodyW = Math.max(1, slot * 0.6);
+  const x = (i: number) => PAD_L + slot * i + slot / 2;
+  const last = view[view.length - 1];
+  const decimals = last.close >= 100 ? 2 : last.close >= 1 ? 4 : 6;
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => hi - f * span);
+  const timeLabel = (t: number) =>
+    new Date(t * 1000).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" });
+
+  return (
+    <div className="w-full bg-[#0a0a0c] rounded-2xl overflow-hidden border border-white/[0.08] p-4">
+      <div className="flex justify-between text-[11px] font-mono text-[#86868b] mb-2">
+        <span>{symbol} · M5 · live bridge</span>
+        <span className="text-white">{last.close.toFixed(decimals)}</span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto">
+        {ticks.map((t, i) => (
+          <g key={i}>
+            <line x1={PAD_L} x2={W - PAD_R} y1={y(t)} y2={y(t)} stroke="rgba(255,255,255,0.06)" />
+            <text x={W - PAD_R + 6} y={y(t) + 4} fontSize="12" fill="#86868b" fontFamily="monospace">
+              {t.toFixed(decimals)}
+            </text>
+          </g>
+        ))}
+        {view.map((b, i) => {
+          const color = b.close >= b.open ? "#30d158" : "#ff453a";
+          const top = y(Math.max(b.open, b.close));
+          const bottom = y(Math.min(b.open, b.close));
+          return (
+            <g key={`${b.time}-${i}`}>
+              <line x1={x(i)} x2={x(i)} y1={y(b.high)} y2={y(b.low)} stroke={color} strokeWidth={1} />
+              <rect x={x(i) - bodyW / 2} y={top} width={bodyW} height={Math.max(1, bottom - top)} fill={color} />
+            </g>
+          );
+        })}
+        <text x={PAD_L} y={H - 6} fontSize="12" fill="#86868b" fontFamily="monospace">{timeLabel(view[0].time)}</text>
+        <text x={W - PAD_R} y={H - 6} fontSize="12" fill="#86868b" fontFamily="monospace" textAnchor="end">{timeLabel(last.time)}</text>
+      </svg>
     </div>
   );
 }
@@ -556,7 +578,7 @@ export default function DaytradPage() {
           </div>
         </div>
 
-        <TradingViewCandleChart symbol={activeChartSymbol} />
+        <CandleChart symbol={activeChartSymbol} />
       </section>
 
       {/* ==================================================================== */}

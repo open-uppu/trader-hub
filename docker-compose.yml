@@ -12,7 +12,7 @@ services:
       - HUB_PORT=8000
     volumes:
       - ./backend:/app/hub/backend
-      - ../daytrading:/app/daytrad:ro
+      - ../daytrad:/app/daytrad:ro
       - ../edca:/app/edca:ro
 
   hub_frontend:

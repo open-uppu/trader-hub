@@ -11,7 +11,9 @@ import {
   Sparkles, 
   Layers,
   ArrowRight,
-  ShieldCheck
+  ShieldCheck,
+  Radar,
+  Info
 } from "lucide-react";
 import { fetchEdcaDetails } from "@/lib/api";
 import { EdcaDetails } from "@/lib/types";
@@ -20,20 +22,68 @@ import { StatusBadge } from "@/components/StatusBadge";
 
 export default function EdcaPage() {
   const [data, setData] = useState<EdcaDetails | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadData = () => {
+    setLoading(true);
+    setError(null);
+    fetchEdcaDetails()
+      .then((res) => {
+        if (!res) {
+          setError("ไม่สามารถเชื่อมต่อ Trader Central Hub Backend ได้ (พอร์ต 8000 ออฟไลน์)");
+        } else {
+          setData(res);
+        }
+      })
+      .catch((err) => {
+        setError("เกิดข้อผิดพลาดในการดึงข้อมูล EDCA: " + String(err));
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
 
   useEffect(() => {
-    fetchEdcaDetails().then(setData);
+    loadData();
   }, []);
 
-  if (!data) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center h-64 text-zinc-500 font-mono text-sm">
-        กำลังโหลดข้อมูล EDCA Investment Advisor...
+      <div className="flex flex-col items-center justify-center h-64 text-zinc-400 font-mono text-sm space-y-3">
+        <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+        <div>กำลังโหลดข้อมูล EDCA Investment Advisor (เชื่อมต่อ API พอร์ต 8000)...</div>
       </div>
     );
   }
 
-  const { summary, holdings, weekly_execution, advisory, optimal_day } = data;
+  if (error || !data) {
+    return (
+      <div className="p-8 max-w-xl mx-auto my-12 rounded-2xl bg-zinc-900/90 border border-rose-500/30 text-center space-y-4">
+        <div className="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-center mx-auto">
+          <AlertTriangle className="w-6 h-6" />
+        </div>
+        <div>
+          <h3 className="text-lg font-bold text-white">ไม่สามารถเชื่อมต่อ Hub Backend ได้</h3>
+          <p className="text-xs text-zinc-400 mt-2 font-mono leading-relaxed">
+            {error}
+          </p>
+          <div className="mt-4 p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-400 text-xs font-mono text-left leading-relaxed">
+            💡 <strong>สาเหตุที่โหลดนาน:</strong> ตัว Backend API (FastAPI) ยังไม่ได้ถูกสั่งรันที่พอร์ต 8000 ทำให้หน้าเว็บเชื่อมต่อไม่สำเร็จ<br/>
+            🚀 <strong>วิธีเริ่มระบบ:</strong> สั่งรัน <code>cd hub && ./run.sh</code> เพื่อเปิดทั้ง Backend และ Frontend พร้อมกัน
+          </div>
+        </div>
+        <button
+          onClick={loadData}
+          className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs transition-colors"
+        >
+          ลองเชื่อมต่อใหม่อีกครั้ง (Retry)
+        </button>
+      </div>
+    );
+  }
+
+  const { summary, holdings, weekly_execution, advisory, optimal_day, scanner_opportunities, min_order_rule } = data;
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
@@ -47,14 +97,18 @@ export default function EdcaPage() {
             <StatusBadge status="active" />
           </div>
           <p className="text-sm text-zinc-400 mt-1">
-            ระบบคำนวณและปรับสัดส่วนการลงทุนตามมูลค่าจริง (Dynamic Value Averaging) พร้อมคำแนะนำจาก AI Advisor ประจำสัปดาห์
+            ระบบคำนวณและปรับสัดส่วนการลงทุนตามมูลค่าจริง (Dynamic Value Averaging) พร้อมกฎขั้นต่ำ ฿50 ของ Dime! และเรดาร์สแกนหุ้นใหม่
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono font-medium flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Concentration Risk Guard Active</span>
+            <span>Concentration Risk Guard</span>
+          </span>
+          <span className="text-xs px-3 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-mono font-medium flex items-center gap-1.5">
+            <Info className="w-3.5 h-3.5" />
+            <span>Dime! ขั้นต่ำ ฿50 ต่อไม้</span>
           </span>
         </div>
       </div>
@@ -101,11 +155,15 @@ export default function EdcaPage() {
                 <span className="text-zinc-400">การจัดการกระปุกสำรอง:</span>
                 <span className="text-zinc-300 font-mono">{weekly_execution.buffer_action}</span>
               </div>
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-400">เกณฑ์ขั้นต่ำคำสั่งซื้อ:</span>
+                <span className="text-amber-400 font-mono font-medium">฿50.00 / ออเดอร์ (Dime!)</span>
+              </div>
             </div>
           </div>
 
           <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800/80 text-[11px] text-zinc-400 leading-relaxed">
-            💡 <strong className="text-zinc-200">หลักการ EDCA:</strong> สัปดาห์ไหนตลาดแพง ระบบจะลดวงเงินไปเก็บไว้ในกระปุกสำรอง สัปดาห์ไหนตลาดลดราคา ระบบจะดึงเงินมาช้อนซื้อเพิ่ม
+            💡 <strong className="text-zinc-200">กฎคำสั่งซื้อขั้นต่ำ 50 บาท:</strong> หากงบสัปดาห์นั้นไม่พอแบ่ง 2 ไม้ให้ถึงขั้นต่ำ 50 บาท ระบบจะรวมงบเป็น 1 ไม้ใหญ่ หรือทบเข้า Cash Buffer อัตโนมัติ ไม่ส่งคำสั่งซื้อที่ต่ำกว่า 50 บาท
           </div>
         </div>
 
@@ -132,8 +190,9 @@ export default function EdcaPage() {
           {/* Allocation Candidates Preview */}
           {weekly_execution.allocations && weekly_execution.allocations.length > 0 && (
             <div className="pt-3 border-t border-zinc-800">
-              <div className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-2">
-                สินทรัพย์แนะนำให้เข้าซื้อสัปดาห์นี้
+              <div className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+                <span>สินทรัพย์แนะนำให้เข้าซื้อสัปดาห์นี้ (ขั้นต่ำ ฿50)</span>
+                <span className="text-[10px] text-zinc-500 font-mono font-normal">Enforced Minimum 50 THB</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {weekly_execution.allocations
@@ -143,7 +202,11 @@ export default function EdcaPage() {
                       <div>
                         <div className="font-bold text-emerald-400 font-mono flex items-center gap-1.5">
                           <span>{alloc.ticker}</span>
-                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-300 font-normal">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-normal ${
+                            alloc.action.includes("NEW ENTRY") 
+                              ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30" 
+                              : "bg-emerald-500/10 text-emerald-300"
+                          }`}>
                             {alloc.action}
                           </span>
                         </div>
@@ -162,6 +225,76 @@ export default function EdcaPage() {
           )}
         </div>
       </div>
+
+      {/* Market Opportunity Radar (New Stock Candidates from Market Scanner) */}
+      {scanner_opportunities && scanner_opportunities.length > 0 && (
+        <div className="p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Radar className="w-4 h-4 text-magenta-400 text-pink-400" />
+              <h3 className="text-lg font-bold text-white">
+                เรดาร์ตรวจจับหุ้นใหม่และของลดราคาในตลาด (Market Opportunity Radar)
+              </h3>
+            </div>
+            <span className="text-xs text-zinc-400 font-mono">
+              Live Scanner Watchlist
+            </span>
+          </div>
+
+          <p className="text-xs text-zinc-400">
+            ระบบสแกนหุ้นชั้นนำบน Dime! เพื่อเฟ้นหาโอกาสเปิดพอร์ตหุ้นใหม่ (New Entry) หากหุ้นตัวไหนปรับฐานลึกจนได้เกรด A+ หรือ A ระบบจะดึงเข้ามาจัดสรรงบ DCA ประจำสัปดาห์
+          </p>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs font-mono">
+              <thead className="bg-zinc-950 text-zinc-400 border-b border-zinc-800">
+                <tr>
+                  <th className="py-3 px-4">Ticker</th>
+                  <th className="py-3 px-4 text-right">ราคาล่าสุด</th>
+                  <th className="py-3 px-4 text-right">Drawdown จาก ATH</th>
+                  <th className="py-3 px-4 text-right">RSI (14)</th>
+                  <th className="py-3 px-4 text-right">ตัวคูณ Mt</th>
+                  <th className="py-3 px-4 text-center">เกรด</th>
+                  <th className="py-3 px-4">สัญญาณกลยุทธ์ (Signal)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800/80">
+                {scanner_opportunities.map((opp) => (
+                  <tr key={opp.ticker} className="hover:bg-zinc-900/50 transition-colors">
+                    <td className="py-3 px-4 font-bold text-zinc-200">
+                      {opp.ticker}
+                    </td>
+                    <td className="py-3 px-4 text-right text-zinc-300">
+                      ${opp.current_price?.toFixed(2)}
+                    </td>
+                    <td className={`py-3 px-4 text-right font-semibold ${opp.drawdown_pct < -10 ? "text-rose-400" : "text-amber-400"}`}>
+                      {opp.drawdown_pct > 0 ? `+${opp.drawdown_pct.toFixed(1)}%` : `${opp.drawdown_pct.toFixed(1)}%`}
+                    </td>
+                    <td className="py-3 px-4 text-right text-zinc-400">
+                      {opp.rsi14?.toFixed(1)}
+                    </td>
+                    <td className="py-3 px-4 text-right text-cyan-400 font-bold">
+                      {opp.multiplier?.toFixed(2)}x
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        opp.grade === "A+" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" :
+                        opp.grade === "A" ? "bg-emerald-500/10 text-emerald-400" :
+                        opp.grade === "B" ? "bg-amber-500/10 text-amber-400" : "bg-zinc-800 text-zinc-400"
+                      }`}>
+                        {opp.grade}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-zinc-300 font-sans text-xs">
+                      {opp.signal}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Holdings Table */}
       <div className="p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800 space-y-4">

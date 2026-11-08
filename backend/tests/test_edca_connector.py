@@ -23,6 +23,7 @@ def test_edca_connector_summary():
     assert "total_portfolio_usd" in summary
     assert "base_weekly_budget" in summary
     assert summary["base_weekly_budget"] == 1000.0
+    assert summary["min_order_thb"] == 50.0
 
 
 def test_edca_connector_details():
@@ -36,3 +37,16 @@ def test_edca_connector_details():
     assert "advisory" in details
     assert "optimal_day" in details
     assert "missing 1 required positional argument" not in details["advisory"]
+
+    # 50 THB minimum order rule verification
+    assert "min_order_rule" in details
+    assert details["min_order_rule"]["min_order_thb"] == 50.0
+    assert details["min_order_rule"]["platform"] == "Dime!"
+    for alloc in details["weekly_execution"]["allocations"]:
+        if alloc["allocated_thb"] > 0:
+            assert alloc["allocated_thb"] >= 50.0, f"{alloc['ticker']} allocation {alloc['allocated_thb']} is below 50 THB"
+
+    # Scanner opportunities verification
+    assert "scanner_opportunities" in details
+    assert isinstance(details["scanner_opportunities"], list)
+    assert len(details["scanner_opportunities"]) > 0

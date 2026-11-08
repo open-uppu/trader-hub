@@ -31,16 +31,16 @@ export const Sidebar: React.FC = () => {
       icon: LayoutDashboard,
     },
     {
-      name: "Daytrad Bot (XAUUSD)",
+      name: "Daytrad (9 Specialists)",
       href: "/daytrad",
       icon: TrendingUp,
-      badge: "MT4/Vision",
+      badge: "9 Markets",
     },
     {
-      name: "EDCA Portfolio",
+      name: "EDCA Wealth Radar",
       href: "/edca",
       icon: PieChart,
-      badge: "AI Advisor",
+      badge: "Dime! ฿50",
     },
   ];
 

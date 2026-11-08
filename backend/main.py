@@ -64,6 +64,42 @@ def download_ea():
     return {"error": "EA file not found"}
 
 
+@app.get("/api/v1/download/mt5-sync-zip")
+def download_mt5_sync_zip():
+    zip_path = Path(__file__).resolve().parent.parent / "frontend" / "public" / "downloads" / "mt5_native_sync.zip"
+    if zip_path.exists():
+        return FileResponse(
+            str(zip_path),
+            filename="mt5_native_sync.zip",
+            media_type="application/zip"
+        )
+    return {"error": "Zip file not found"}
+
+
+@app.get("/api/v1/download/mt5-sync-bat")
+def download_mt5_sync_bat():
+    bat_path = DAYTRAD_DIR / "scripts" / "start_mt5_sync.bat"
+    if bat_path.exists():
+        return FileResponse(
+            str(bat_path),
+            filename="start_mt5_sync.bat",
+            media_type="application/octet-stream"
+        )
+    return {"error": "BAT file not found"}
+
+
+@app.get("/api/v1/download/mt5-sync-py")
+def download_mt5_sync_py():
+    py_path = DAYTRAD_DIR / "scripts" / "mt5_native_sync.py"
+    if py_path.exists():
+        return FileResponse(
+            str(py_path),
+            filename="mt5_native_sync.py",
+            media_type="text/plain"
+        )
+    return {"error": "Python file not found"}
+
+
 if __name__ == "__main__":
     import uvicorn
     from config import HOST, PORT

@@ -1,5 +1,8 @@
 services:
   hub_backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     image: trader-hub-backend:latest
     container_name: trader_hub_backend
     restart: unless-stopped
@@ -13,6 +16,9 @@ services:
       - D:/edca:/app/edca:ro
 
   hub_frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     image: trader-hub-frontend:latest
     container_name: trader_hub_frontend
     restart: unless-stopped

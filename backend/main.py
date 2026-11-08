@@ -76,6 +76,18 @@ def download_mt5_sync_zip():
     return {"error": "Zip file not found"}
 
 
+@app.get("/api/v1/download/hub-zip")
+def download_hub_zip():
+    zip_path = Path(__file__).resolve().parent.parent / "frontend" / "public" / "downloads" / "hub_update.zip"
+    if zip_path.exists():
+        return FileResponse(
+            str(zip_path),
+            filename="hub_update.zip",
+            media_type="application/zip"
+        )
+    return {"error": "Hub zip file not found"}
+
+
 @app.get("/api/v1/download/mt5-sync-bat")
 def download_mt5_sync_bat():
     bat_path = DAYTRAD_DIR / "scripts" / "start_mt5_sync.bat"

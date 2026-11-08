@@ -9,18 +9,18 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, online }) => {
   const isOnline = online ?? (status === "active");
 
   const colors = {
-    active: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
-    standby: "bg-amber-500/10 text-amber-400 border-amber-500/30",
-    idle: "bg-cyan-500/10 text-cyan-400 border-cyan-500/30",
-    offline: "bg-zinc-800 text-zinc-400 border-zinc-700",
+    active: "bg-[#30d158]/10 text-[#30d158] border-[#30d158]/20",
+    standby: "bg-[#ff9f0a]/10 text-[#ff9f0a] border-[#ff9f0a]/20",
+    idle: "bg-[#0071e3]/10 text-[#0071e3] border-[#0071e3]/20",
+    offline: "bg-white/[0.05] text-[#86868b] border-white/[0.08]",
   };
 
   const badgeColor = colors[status as keyof typeof colors] || colors.offline;
 
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${badgeColor}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
-      <span className="uppercase tracking-wider text-[10px]">{status}</span>
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${badgeColor}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${isOnline ? "bg-[#30d158] animate-pulse" : "bg-[#ff9f0a]"}`} />
+      <span className="capitalize tracking-tight">{status}</span>
     </span>
   );
 };

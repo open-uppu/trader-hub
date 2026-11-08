@@ -12,29 +12,19 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   label,
   value,
   subtitle,
-  color = "cyan",
   icon,
 }) => {
-  const borderColors = {
-    emerald: "border-emerald-500/20 hover:border-emerald-500/40 text-emerald-400",
-    amber: "border-amber-500/20 hover:border-amber-500/40 text-amber-400",
-    cyan: "border-cyan-500/20 hover:border-cyan-500/40 text-cyan-400",
-    rose: "border-rose-500/20 hover:border-rose-500/40 text-rose-400",
-    blue: "border-blue-500/20 hover:border-blue-500/40 text-blue-400",
-    zinc: "border-zinc-800 hover:border-zinc-700 text-zinc-300",
-  };
-
   return (
-    <div className={`p-4 rounded-xl bg-zinc-900/60 border ${borderColors[color]} transition-all duration-200 backdrop-blur-sm flex flex-col justify-between`}>
-      <div className="flex items-center justify-between text-zinc-400 text-xs font-medium">
+    <div className="p-5 rounded-2xl bg-[#161618] border border-white/[0.08] hover:border-white/[0.14] transition-all duration-300 flex flex-col justify-between group">
+      <div className="flex items-center justify-between text-[#86868b] text-[12px] font-medium tracking-tight">
         <span>{label}</span>
-        {icon && <span className="text-zinc-500">{icon}</span>}
+        {icon && <span className="text-[#86868b] group-hover:text-white transition-colors">{icon}</span>}
       </div>
-      <div className="mt-2 text-xl font-bold tracking-tight text-white font-mono">
+      <div className="mt-3 text-2xl font-semibold tracking-tight text-white tabular-nums">
         {value}
       </div>
       {subtitle && (
-        <div className="mt-1 text-[11px] text-zinc-500">
+        <div className="mt-1 text-[11px] text-[#86868b] font-normal tracking-tight">
           {subtitle}
         </div>
       )}

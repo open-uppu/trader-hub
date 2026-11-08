@@ -9,14 +9,42 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: "#09090b",
-        foreground: "#f4f4f5",
-        terminal: {
-          dark: "#0a0d14",
-          card: "#111522",
-          border: "#1e2638",
-          hover: "#182032"
-        }
+        background: "#000000",
+        foreground: "#f5f5f7",
+        apple: {
+          bg: "#000000",
+          card: "#161618",
+          elevated: "#1c1c1e",
+          subtle: "#2c2c2e",
+          border: "rgba(255, 255, 255, 0.08)",
+          blue: "#0071e3",
+          green: "#30d158",
+          amber: "#ff9f0a",
+          red: "#ff453a",
+          purple: "#bf5af2",
+          gray: "#86868b",
+        },
+      },
+      fontFamily: {
+        sans: [
+          "-apple-system",
+          "BlinkMacSystemFont",
+          '"SF Pro Display"',
+          '"SF Pro Text"',
+          '"Helvetica Neue"',
+          "Helvetica",
+          "Arial",
+          "sans-serif",
+        ],
+        mono: [
+          '"SF Mono"',
+          "Menlo",
+          "Monaco",
+          "Consolas",
+          '"Liberation Mono"',
+          '"Courier New"',
+          "monospace",
+        ],
       },
     },
   },

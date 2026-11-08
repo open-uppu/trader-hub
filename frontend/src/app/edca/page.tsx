@@ -50,65 +50,61 @@ export default function EdcaPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 text-zinc-400 font-mono text-sm space-y-3">
-        <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-        <div>กำลังโหลดข้อมูล EDCA Investment Advisor (เชื่อมต่อ API พอร์ต 8000)...</div>
+      <div className="flex flex-col items-center justify-center h-80 text-[#86868b] text-[13px] space-y-3">
+        <div className="w-7 h-7 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+        <div className="font-medium">Connecting to EDCA Wealth Radar...</div>
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="p-8 max-w-xl mx-auto my-12 rounded-2xl bg-zinc-900/90 border border-rose-500/30 text-center space-y-4">
-        <div className="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-center mx-auto">
-          <AlertTriangle className="w-6 h-6" />
+      <div className="p-8 max-w-lg mx-auto my-16 rounded-3xl bg-[#161618] border border-white/[0.08] text-center space-y-5">
+        <div className="w-12 h-12 rounded-2xl bg-white/[0.05] border border-white/[0.1] text-[#ff453a] flex items-center justify-center mx-auto">
+          <AlertTriangle className="w-6 h-6" strokeWidth={1.75} />
         </div>
-        <div>
-          <h3 className="text-lg font-bold text-white">ไม่สามารถเชื่อมต่อ Hub Backend ได้</h3>
-          <p className="text-xs text-zinc-400 mt-2 font-mono leading-relaxed">
+        <div className="space-y-2">
+          <h3 className="text-base font-semibold text-white">ไม่สามารถเชื่อมต่อ Hub Backend ได้</h3>
+          <p className="text-[12px] text-[#86868b] leading-relaxed">
             {error}
           </p>
-          <div className="mt-4 p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-400 text-xs font-mono text-left leading-relaxed">
-            💡 <strong>สาเหตุที่โหลดนาน:</strong> ตัว Backend API (FastAPI) ยังไม่ได้ถูกสั่งรันที่พอร์ต 8000 ทำให้หน้าเว็บเชื่อมต่อไม่สำเร็จ<br/>
-            🚀 <strong>วิธีเริ่มระบบ:</strong> สั่งรัน <code>cd hub && ./run.sh</code> เพื่อเปิดทั้ง Backend และ Frontend พร้อมกัน
-          </div>
         </div>
         <button
           onClick={loadData}
-          className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs transition-colors"
+          className="px-5 py-2 rounded-full bg-white text-black hover:bg-neutral-200 font-medium text-[12px] transition-all active:scale-[0.98]"
         >
-          ลองเชื่อมต่อใหม่อีกครั้ง (Retry)
+          ลองใหม่อีกครั้ง
         </button>
       </div>
     );
   }
 
-  const { summary, holdings, weekly_execution, advisory, optimal_day, scanner_opportunities, min_order_rule } = data;
+  const { summary, holdings, weekly_execution, advisory, optimal_day, scanner_opportunities } = data;
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
+    <div className="space-y-8 max-w-6xl mx-auto py-2">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-zinc-800">
-        <div>
-          <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-bold text-white tracking-tight">
-              EDCA Investment Portfolio & AI Advisor
-            </h2>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-white/[0.08]">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl font-semibold text-white tracking-tight">
+              EDCA Wealth Radar
+            </h1>
             <StatusBadge status="active" />
           </div>
-          <p className="text-sm text-zinc-400 mt-1">
-            ระบบคำนวณและปรับสัดส่วนการลงทุนตามมูลค่าจริง (Dynamic Value Averaging) พร้อมกฎขั้นต่ำ ฿50 ของ Dime! และเรดาร์สแกนหุ้นใหม่
+          <p className="text-[13px] text-[#86868b]">
+            ระบบคำนวณและปรับสัดส่วนการลงทุนตามมูลค่าจริง (Dynamic Value Averaging) พร้อมกฎขั้นต่ำ ฿50 ของ Dime!
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono font-medium flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Concentration Risk Guard</span>
+          <span className="text-[12px] px-3 py-1 rounded-full bg-white/[0.05] border border-white/[0.08] text-neutral-300 font-medium flex items-center gap-1.5">
+            <ShieldCheck className="w-3.5 h-3.5 text-[#30d158]" />
+            <span>Concentration Guard</span>
           </span>
-          <span className="text-xs px-3 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-mono font-medium flex items-center gap-1.5">
-            <Info className="w-3.5 h-3.5" />
-            <span>Dime! ขั้นต่ำ ฿50 ต่อไม้</span>
+          <span className="text-[12px] px-3 py-1 rounded-full bg-white/[0.05] border border-white/[0.08] text-neutral-300 font-medium flex items-center gap-1.5">
+            <Info className="w-3.5 h-3.5 text-[#0071e3]" />
+            <span>Dime! Min ฿50</span>
           </span>
         </div>
       </div>
@@ -128,93 +124,95 @@ export default function EdcaPage() {
       {/* Weekly Plan & Execution Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Weekly Execution Card */}
-        <div className="p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800 flex flex-col justify-between space-y-4">
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 font-mono">
+        <div className="p-7 rounded-3xl bg-[#161618] border border-white/[0.08] flex flex-col justify-between space-y-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] font-medium text-[#86868b] tracking-tight">
                 แผนลงทุนสัปดาห์นี้
               </span>
-              <span className="text-xs px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 font-mono">
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/[0.08] text-white font-mono">
                 {weekly_execution.multiplier.toFixed(2)}x
               </span>
             </div>
 
-            <div className="text-3xl font-bold text-white font-mono">
-              ฿{weekly_execution.invest_amount_thb.toLocaleString()}
-            </div>
-            <div className="text-xs text-zinc-500 mt-1">
-              คำนวณจากงบฐาน ฿{weekly_execution.base_budget.toLocaleString()} × Multiplier
+            <div>
+              <div className="text-3xl font-semibold text-white font-mono tracking-tight tabular-nums">
+                ฿{weekly_execution.invest_amount_thb.toLocaleString()}
+              </div>
+              <div className="text-[11px] text-[#86868b] mt-1">
+                งบฐาน ฿{weekly_execution.base_budget.toLocaleString()} × Multiplier
+              </div>
             </div>
 
-            <div className="mt-4 pt-4 border-t border-zinc-800 space-y-2.5 text-xs">
+            <div className="pt-4 border-t border-white/[0.06] space-y-2.5 text-[12px]">
               <div className="flex items-center justify-between">
-                <span className="text-zinc-400">วันเข้าซื้อที่ดีที่สุด:</span>
-                <span className="text-emerald-400 font-semibold font-mono">{optimal_day}</span>
+                <span className="text-[#86868b]">วันเข้าซื้อที่เหมาะสม:</span>
+                <span className="text-white font-medium font-mono">{optimal_day}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-zinc-400">การจัดการกระปุกสำรอง:</span>
-                <span className="text-zinc-300 font-mono">{weekly_execution.buffer_action}</span>
+                <span className="text-[#86868b]">การจัดการ Cash Buffer:</span>
+                <span className="text-neutral-300 font-mono">{weekly_execution.buffer_action}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-zinc-400">เกณฑ์ขั้นต่ำคำสั่งซื้อ:</span>
-                <span className="text-amber-400 font-mono font-medium">฿50.00 / ออเดอร์ (Dime!)</span>
+                <span className="text-[#86868b]">เกณฑ์ขั้นต่ำคำสั่งซื้อ:</span>
+                <span className="text-[#30d158] font-mono font-medium">฿50.00 (Dime!)</span>
               </div>
             </div>
           </div>
 
-          <div className="p-3 rounded-xl bg-zinc-950 border border-zinc-800/80 text-[11px] text-zinc-400 leading-relaxed">
-            💡 <strong className="text-zinc-200">กฎคำสั่งซื้อขั้นต่ำ 50 บาท:</strong> หากงบสัปดาห์นั้นไม่พอแบ่ง 2 ไม้ให้ถึงขั้นต่ำ 50 บาท ระบบจะรวมงบเป็น 1 ไม้ใหญ่ หรือทบเข้า Cash Buffer อัตโนมัติ ไม่ส่งคำสั่งซื้อที่ต่ำกว่า 50 บาท
+          <div className="p-3.5 rounded-2xl bg-black/40 border border-white/[0.05] text-[11px] text-[#86868b] leading-relaxed">
+            💡 <strong>กฎคำสั่งซื้อขั้นต่ำ 50 บาท:</strong> หากงบสัปดาห์ไม่พอแบ่ง 2 ไม้ให้ถึงขั้นต่ำ 50 บาท ระบบจะรวมงบเป็น 1 ไม้ใหญ่ หรือพักใน Cash Buffer อัตโนมัติ
           </div>
         </div>
 
         {/* AI Advisor Panel */}
-        <div className="lg:col-span-2 p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800 flex flex-col justify-between space-y-4">
-          <div>
-            <div className="flex items-center justify-between mb-3">
+        <div className="lg:col-span-2 p-7 rounded-3xl bg-[#161618] border border-white/[0.08] flex flex-col justify-between space-y-5">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-emerald-400" />
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                  บทวิเคราะห์จาก AI Weekly Investment Advisor
-                </h3>
+                <Sparkles className="w-4 h-4 text-[#ff9f0a]" />
+                <h2 className="text-base font-semibold text-white tracking-tight">
+                  AI Weekly Investment Advisory
+                </h2>
               </div>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
+              <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-white/[0.06] text-[#86868b]">
                 Gemini Multi-Factor
               </span>
             </div>
 
-            <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-800 text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap font-sans max-h-56 overflow-y-auto">
+            <div className="p-4 rounded-2xl bg-black/40 border border-white/[0.05] text-[12px] text-neutral-300 leading-relaxed whitespace-pre-wrap font-sans max-h-56 overflow-y-auto">
               {advisory}
             </div>
           </div>
 
           {/* Allocation Candidates Preview */}
           {weekly_execution.allocations && weekly_execution.allocations.length > 0 && (
-            <div className="pt-3 border-t border-zinc-800">
-              <div className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-2 flex items-center justify-between">
-                <span>สินทรัพย์แนะนำให้เข้าซื้อสัปดาห์นี้ (ขั้นต่ำ ฿50)</span>
-                <span className="text-[10px] text-zinc-500 font-mono font-normal">Enforced Minimum 50 THB</span>
+            <div className="pt-3 border-t border-white/[0.06] space-y-2.5">
+              <div className="text-[11px] font-medium text-[#86868b] tracking-tight flex items-center justify-between">
+                <span>สินทรัพย์แนะนำเข้าซื้อสัปดาห์นี้ (ขั้นต่ำ ฿50)</span>
+                <span className="text-[10px] text-[#86868b]">Enforced Minimum 50 THB</span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {weekly_execution.allocations
                   .filter((alloc) => alloc.allocated_thb > 0)
                   .map((alloc) => (
-                    <div key={alloc.ticker} className="p-2.5 rounded-lg bg-zinc-900 border border-emerald-500/20 text-xs flex items-center justify-between">
+                    <div key={alloc.ticker} className="p-3 rounded-2xl bg-black/40 border border-white/[0.06] text-[12px] flex items-center justify-between">
                       <div>
-                        <div className="font-bold text-emerald-400 font-mono flex items-center gap-1.5">
+                        <div className="font-semibold text-white font-mono flex items-center gap-2">
                           <span>{alloc.ticker}</span>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-normal ${
+                          <span className={`text-[10px] px-2 py-0.2 rounded-full font-sans font-medium ${
                             alloc.action.includes("NEW ENTRY") 
-                              ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30" 
-                              : "bg-emerald-500/10 text-emerald-300"
+                              ? "bg-[#0071e3]/15 text-[#0071e3]" 
+                              : "bg-[#30d158]/15 text-[#30d158]"
                           }`}>
                             {alloc.action}
                           </span>
                         </div>
-                        <div className="text-[10px] text-zinc-400 mt-0.5">{alloc.reason}</div>
+                        <div className="text-[11px] text-[#86868b] mt-0.5">{alloc.reason}</div>
                       </div>
                       <div className="text-right">
-                        <div className="font-bold text-white font-mono">฿{alloc.allocated_thb.toLocaleString()}</div>
-                        <span className="text-[10px] text-zinc-400 font-mono">
+                        <div className="font-semibold text-white font-mono">฿{alloc.allocated_thb.toLocaleString()}</div>
+                        <span className="text-[10px] text-[#86868b] font-mono">
                           {alloc.percentage}%
                         </span>
                       </div>
@@ -226,37 +224,31 @@ export default function EdcaPage() {
         </div>
       </div>
 
-      {/* Full Asset Ranking & Queue Leaderboard */}
+      {/* Asset Ranking & Queue Leaderboard */}
       {weekly_execution.allocations && weekly_execution.allocations.length > 0 && (
-        <div className="p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800 space-y-4">
+        <section className="p-6 rounded-3xl bg-[#161618] border border-white/[0.08] space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-amber-400" />
-              <h3 className="text-lg font-bold text-white">
-                กระดานจัดอันดับความน่าสนใจและการจัดสรรคิว (Asset Ranking & Queue Leaderboard)
-              </h3>
+            <div>
+              <h2 className="text-base font-semibold text-white tracking-tight">Asset Ranking & Execution Queue</h2>
+              <p className="text-[12px] text-[#86868b]">กระดานจัดอันดับหุ้นตามคะแนนส่วนลดราคาและขนาดเงินทุน</p>
             </div>
-            <span className="text-xs text-zinc-400 font-mono">
-              {weekly_execution.allocations.length} Assets Evaluated
+            <span className="text-[11px] text-[#86868b] font-mono">
+              {weekly_execution.allocations.length} Assets
             </span>
           </div>
 
-          <p className="text-xs text-zinc-400">
-            ระบบจัดอันดับหุ้นทุกตัวในพอร์ตและเรดาร์ตามส่วนลดราคา (Drawdown + Factor Score) โดยจัดสรรงบให้หุ้นอันดับสูงสุดตามขนาดเงินทุน และควบคุมไม่ให้ต่ำกว่า 50 บาท (Dime!) ส่วนหุ้นอันดับถัดไปจะเข้าคิวรอจัดสรรในสัปดาห์ถัดไป
-          </p>
-
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-mono">
-              <thead className="bg-zinc-950 text-zinc-400 border-b border-zinc-800">
+            <table className="w-full text-left text-[12px] font-mono">
+              <thead className="text-[#86868b] border-b border-white/[0.06]">
                 <tr>
-                  <th className="py-3 px-4">อันดับ / สินทรัพย์</th>
-                  <th className="py-3 px-4">สถานะการตัดสินใจ</th>
-                  <th className="py-3 px-4 text-right">งบจัดสรร (THB)</th>
-                  <th className="py-3 px-4 text-right">สัดส่วนงบ (%)</th>
-                  <th className="py-3 px-4">เหตุผลและคะแนนกลยุทธ์</th>
+                  <th className="py-2.5 px-3">Rank / Symbol</th>
+                  <th className="py-2.5 px-3">Action</th>
+                  <th className="py-2.5 px-3 text-right">Allocated (THB)</th>
+                  <th className="py-2.5 px-3 text-right">Weight (%)</th>
+                  <th className="py-2.5 px-3 font-sans">Strategic Rationale</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800/80">
+              <tbody className="divide-y divide-white/[0.04]">
                 {weekly_execution.allocations.map((item, idx) => {
                   const isAllocated = item.allocated_thb > 0;
                   const isNew = item.action.includes("NEW ENTRY");
@@ -267,41 +259,41 @@ export default function EdcaPage() {
                       key={item.ticker} 
                       className={`transition-colors ${
                         isAllocated 
-                          ? "bg-emerald-500/5 hover:bg-emerald-500/10 font-medium" 
-                          : "hover:bg-zinc-900/50 text-zinc-400"
+                          ? "bg-white/[0.02] hover:bg-white/[0.04]" 
+                          : "hover:bg-white/[0.01] text-[#86868b]"
                       }`}
                     >
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-3">
                         <div className="flex items-center gap-2">
-                          <span className={`w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold ${
-                            isAllocated ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-zinc-800 text-zinc-400"
+                          <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold ${
+                            isAllocated ? "bg-white text-black" : "bg-white/[0.06] text-[#86868b]"
                           }`}>
                             {idx + 1}
                           </span>
-                          <span className="font-bold text-white text-sm">{item.ticker}</span>
+                          <span className="font-semibold text-white text-sm">{item.ticker}</span>
                         </div>
                       </td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
-                          isNew ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40" :
-                          isAllocated ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" :
-                          isQueue ? "bg-amber-500/10 text-amber-300 border border-amber-500/20" :
-                          "bg-zinc-800 text-zinc-400"
+                      <td className="py-3 px-3">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium font-sans ${
+                          isNew ? "bg-[#0071e3]/15 text-[#0071e3]" :
+                          isAllocated ? "bg-[#30d158]/15 text-[#30d158]" :
+                          isQueue ? "bg-[#ff9f0a]/15 text-[#ff9f0a]" :
+                          "bg-white/[0.06] text-[#86868b]"
                         }`}>
                           {item.action}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-right">
-                        <span className={`font-bold ${isAllocated ? "text-emerald-400 text-sm" : "text-zinc-500"}`}>
+                      <td className="py-3 px-3 text-right">
+                        <span className={`font-semibold ${isAllocated ? "text-white text-sm" : "text-[#86868b]"}`}>
                           {item.allocated_thb > 0 ? `฿${item.allocated_thb.toLocaleString()}` : "-"}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-right">
-                        <span className={isAllocated ? "text-zinc-200" : "text-zinc-500"}>
+                      <td className="py-3 px-3 text-right">
+                        <span className={isAllocated ? "text-neutral-300" : "text-[#86868b]"}>
                           {item.percentage > 0 ? `${item.percentage}%` : "-"}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-zinc-300 font-sans text-xs">
+                      <td className="py-3 px-3 text-[#86868b] font-sans text-[12px]">
                         {item.reason}
                       </td>
                     </tr>
@@ -310,69 +302,63 @@ export default function EdcaPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Market Opportunity Radar (New Stock Candidates from Market Scanner) */}
+      {/* Market Opportunities */}
       {scanner_opportunities && scanner_opportunities.length > 0 && (
-        <div className="p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800 space-y-4">
+        <section className="p-6 rounded-3xl bg-[#161618] border border-white/[0.08] space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Radar className="w-4 h-4 text-magenta-400 text-pink-400" />
-              <h3 className="text-lg font-bold text-white">
-                เรดาร์ตรวจจับหุ้นใหม่และของลดราคาในตลาด (Market Opportunity Radar)
-              </h3>
+            <div>
+              <h2 className="text-base font-semibold text-white tracking-tight">Market Opportunity Radar</h2>
+              <p className="text-[12px] text-[#86868b]">เรดาร์สแกนหุ้นปรับฐานลึกเพื่อหาโอกาสเปิดพอร์ตใหม่</p>
             </div>
-            <span className="text-xs text-zinc-400 font-mono">
-              Live Scanner Watchlist
+            <span className="text-[11px] text-[#86868b] font-mono">
+              Live Watchlist
             </span>
           </div>
 
-          <p className="text-xs text-zinc-400">
-            ระบบสแกนหุ้นชั้นนำบน Dime! เพื่อเฟ้นหาโอกาสเปิดพอร์ตหุ้นใหม่ (New Entry) หากหุ้นตัวไหนปรับฐานลึกจนได้เกรด A+ หรือ A ระบบจะดึงเข้ามาจัดสรรงบ DCA ประจำสัปดาห์
-          </p>
-
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-mono">
-              <thead className="bg-zinc-950 text-zinc-400 border-b border-zinc-800">
+            <table className="w-full text-left text-[12px] font-mono">
+              <thead className="text-[#86868b] border-b border-white/[0.06]">
                 <tr>
-                  <th className="py-3 px-4">Ticker</th>
-                  <th className="py-3 px-4 text-right">ราคาล่าสุด</th>
-                  <th className="py-3 px-4 text-right">Drawdown จาก ATH</th>
-                  <th className="py-3 px-4 text-right">RSI (14)</th>
-                  <th className="py-3 px-4 text-right">ตัวคูณ Mt</th>
-                  <th className="py-3 px-4 text-center">เกรด</th>
-                  <th className="py-3 px-4">สัญญาณกลยุทธ์ (Signal)</th>
+                  <th className="py-2.5 px-3">Ticker</th>
+                  <th className="py-2.5 px-3 text-right">Price</th>
+                  <th className="py-2.5 px-3 text-right">Drawdown (ATH)</th>
+                  <th className="py-2.5 px-3 text-right">RSI (14)</th>
+                  <th className="py-2.5 px-3 text-right">Multiplier</th>
+                  <th className="py-2.5 px-3 text-center">Grade</th>
+                  <th className="py-2.5 px-3 font-sans">Signal</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800/80">
+              <tbody className="divide-y divide-white/[0.04]">
                 {scanner_opportunities.map((opp) => (
-                  <tr key={opp.ticker} className="hover:bg-zinc-900/50 transition-colors">
-                    <td className="py-3 px-4 font-bold text-zinc-200">
+                  <tr key={opp.ticker} className="hover:bg-white/[0.02]">
+                    <td className="py-3 px-3 font-semibold text-white">
                       {opp.ticker}
                     </td>
-                    <td className="py-3 px-4 text-right text-zinc-300">
+                    <td className="py-3 px-3 text-right text-neutral-300">
                       ${opp.current_price?.toFixed(2)}
                     </td>
-                    <td className={`py-3 px-4 text-right font-semibold ${opp.drawdown_pct < -10 ? "text-rose-400" : "text-amber-400"}`}>
+                    <td className={`py-3 px-3 text-right font-semibold ${opp.drawdown_pct < -10 ? "text-[#ff453a]" : "text-[#ff9f0a]"}`}>
                       {opp.drawdown_pct > 0 ? `+${opp.drawdown_pct.toFixed(1)}%` : `${opp.drawdown_pct.toFixed(1)}%`}
                     </td>
-                    <td className="py-3 px-4 text-right text-zinc-400">
+                    <td className="py-3 px-3 text-right text-[#86868b]">
                       {opp.rsi14?.toFixed(1)}
                     </td>
-                    <td className="py-3 px-4 text-right text-cyan-400 font-bold">
+                    <td className="py-3 px-3 text-right text-white font-semibold">
                       {opp.multiplier?.toFixed(2)}x
                     </td>
-                    <td className="py-3 px-4 text-center">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        opp.grade === "A+" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" :
-                        opp.grade === "A" ? "bg-emerald-500/10 text-emerald-400" :
-                        opp.grade === "B" ? "bg-amber-500/10 text-amber-400" : "bg-zinc-800 text-zinc-400"
+                    <td className="py-3 px-3 text-center">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                        opp.grade === "A+" ? "bg-[#30d158]/15 text-[#30d158]" :
+                        opp.grade === "A" ? "bg-[#30d158]/10 text-[#30d158]" :
+                        opp.grade === "B" ? "bg-[#ff9f0a]/10 text-[#ff9f0a]" : "bg-white/[0.06] text-[#86868b]"
                       }`}>
                         {opp.grade}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-zinc-300 font-sans text-xs">
+                    <td className="py-3 px-3 text-[#86868b] font-sans text-[12px]">
                       {opp.signal}
                     </td>
                   </tr>
@@ -380,67 +366,65 @@ export default function EdcaPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
       )}
 
       {/* Holdings Table */}
-      <div className="p-6 rounded-2xl bg-zinc-900/50 border border-zinc-800 space-y-4">
+      <section className="p-6 rounded-3xl bg-[#161618] border border-white/[0.08] space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <PieChart className="w-4 h-4 text-cyan-400" />
-            <h3 className="text-lg font-bold text-white">
-              พอร์ตการลงทุนปัจจุบัน (Dime! Portfolio Holdings)
-            </h3>
+          <div>
+            <h2 className="text-base font-semibold text-white tracking-tight">Portfolio Holdings</h2>
+            <p className="text-[12px] text-[#86868b]">สัดส่วนหุ้นและผลตอบแทนในพอร์ตปัจจุบัน</p>
           </div>
-          <span className="text-xs text-zinc-500 font-mono">
-            {holdings.length} Positions Active
+          <span className="text-[11px] text-[#86868b] font-mono">
+            {holdings.length} Positions
           </span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-zinc-950 text-zinc-400 font-mono border-b border-zinc-800">
+          <table className="w-full text-left text-[12px]">
+            <thead className="text-[#86868b] border-b border-white/[0.06]">
               <tr>
-                <th className="py-3 px-4">Ticker</th>
-                <th className="py-3 px-4">ตลาด</th>
-                <th className="py-3 px-4 text-right">มูลค่าตลาด (USD)</th>
-                <th className="py-3 px-4 text-right">สัดส่วนพอร์ต (%)</th>
-                <th className="py-3 px-4 text-right">ผลตอบแทน (%)</th>
-                <th className="py-3 px-4 text-center">สถานะความเสี่ยง</th>
+                <th className="py-2.5 px-3">Ticker</th>
+                <th className="py-2.5 px-3">Market</th>
+                <th className="py-2.5 px-3 text-right">Value (USD)</th>
+                <th className="py-2.5 px-3 text-right">Weight (%)</th>
+                <th className="py-2.5 px-3 text-right">Return (%)</th>
+                <th className="py-2.5 px-3 text-center">Risk Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/80 font-mono">
+            <tbody className="divide-y divide-white/[0.04] font-mono">
               {holdings.map((h) => {
                 const isOverweight = (h.market === "US" && h.port_weight >= 20.0) || (h.market === "TH" && h.port_weight >= 40.0);
                 return (
-                  <tr key={h.ticker} className="hover:bg-zinc-900/50 transition-colors">
-                    <td className="py-3 px-4 font-bold text-zinc-200">
+                  <tr key={h.ticker} className="hover:bg-white/[0.02]">
+                    <td className="py-3 px-3 font-semibold text-white">
                       {h.ticker}
                     </td>
-                    <td className="py-3 px-4 text-zinc-400">
-                      <span className={`px-2 py-0.5 rounded text-[10px] ${h.market === "US" ? "bg-blue-500/10 text-blue-400" : "bg-purple-500/10 text-purple-400"}`}>
+                    <td className="py-3 px-3">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] bg-white/[0.06] text-[#86868b]">
                         {h.market ?? "US"}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-right text-zinc-200 font-semibold">
+                    <td className="py-3 px-3 text-right text-neutral-200 font-semibold">
                       ${h.market_value_usd.toFixed(2)}
                     </td>
-                    <td className="py-3 px-4 text-right text-zinc-300">
+                    <td className="py-3 px-3 text-right text-[#86868b]">
                       {h.port_weight.toFixed(2)}%
                     </td>
-                    <td className={`py-3 px-4 text-right font-semibold ${h.return_pct >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                    <td className={`py-3 px-3 text-right font-semibold ${h.return_pct >= 0 ? "text-[#30d158]" : "text-[#ff453a]"}`}>
                       {h.return_pct >= 0 ? `+${h.return_pct.toFixed(2)}%` : `${h.return_pct.toFixed(2)}%`}
                     </td>
-                    <td className="py-3 px-4 text-center">
+                    <td className="py-3 px-3 text-center font-sans">
                       {isOverweight ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] bg-[#ff9f0a]/15 text-[#ff9f0a]">
                           <AlertTriangle className="w-3 h-3" />
-                          <span>Overweight (หยุดเติม)</span>
+                          <span>Overweight</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] bg-[#30d158]/15 text-[#30d158]">
                           <CheckCircle2 className="w-3 h-3" />
-                          <span>สัดส่วนเหมาะสม</span>
+                          <span>Optimal</span>
                         </span>
                       )}
                     </td>
@@ -450,7 +434,7 @@ export default function EdcaPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

@@ -7,11 +7,10 @@ import {
   LayoutDashboard, 
   TrendingUp, 
   PieChart, 
-  Layers, 
-  ExternalLink, 
-  PlusCircle, 
   Activity,
-  ShieldCheck
+  ShieldCheck,
+  Command,
+  ChevronRight
 } from "lucide-react";
 import { fetchProjects } from "@/lib/api";
 import { ProjectItem } from "@/lib/types";
@@ -26,46 +25,49 @@ export const Sidebar: React.FC = () => {
 
   const navItems = [
     {
-      name: "ภาพรวม Hub (Overview)",
+      name: "Overview",
+      subname: "ภาพรวมพอร์ตและคำสั่ง",
       href: "/",
       icon: LayoutDashboard,
     },
     {
-      name: "Daytrad (9 Specialists)",
+      name: "Daytrad Bot",
+      subname: "9 Specialist Markets",
       href: "/daytrad",
       icon: TrendingUp,
-      badge: "9 Markets",
+      badge: "MT5",
     },
     {
-      name: "EDCA Wealth Radar",
+      name: "EDCA Wealth",
+      subname: "Dynamic Value Averaging",
       href: "/edca",
       icon: PieChart,
-      badge: "Dime! ฿50",
+      badge: "฿50",
     },
   ];
 
   return (
-    <aside className="w-64 border-r border-zinc-800 bg-zinc-950 flex flex-col justify-between h-screen fixed left-0 top-0 z-40 select-none">
+    <aside className="w-64 border-r border-white/[0.08] bg-black/80 backdrop-blur-2xl flex flex-col justify-between h-screen fixed left-0 top-0 z-40 select-none">
       <div>
-        {/* Brand Header */}
-        <div className="h-16 flex items-center px-6 border-b border-zinc-800/80 gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-600 to-emerald-500 flex items-center justify-center text-black font-extrabold text-sm shadow-lg shadow-cyan-950">
-            TH
+        {/* Apple macOS style App Titlebar */}
+        <div className="h-16 flex items-center px-5 border-b border-white/[0.06] gap-3">
+          <div className="w-9 h-9 rounded-[10px] bg-gradient-to-b from-[#2c2c2e] to-[#1c1c1e] border border-white/[0.12] flex items-center justify-center text-white font-semibold text-sm shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
+            <Command className="w-4 h-4 text-white" strokeWidth={2} />
           </div>
           <div>
-            <div className="font-bold text-sm tracking-wide text-zinc-100 flex items-center gap-1.5">
-              TRADER HUB
-              <span className="text-[10px] px-1.5 py-0.2 rounded bg-zinc-800 text-cyan-400 font-mono">v1.0</span>
+            <div className="font-semibold text-[13px] tracking-tight text-white flex items-center gap-1.5">
+              Trader Hub
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/[0.08] text-neutral-300 font-mono">v1.0</span>
             </div>
-            <div className="text-[11px] text-zinc-500 font-medium">Multi-Project Portal</div>
+            <div className="text-[11px] text-[#86868b] font-normal tracking-tight">FinTech Command</div>
           </div>
         </div>
 
         {/* Navigation Sections */}
-        <div className="p-4 space-y-6">
+        <div className="p-3 space-y-6">
           <div>
-            <div className="text-[10px] uppercase font-semibold text-zinc-500 tracking-wider px-3 mb-2">
-              Main Terminal
+            <div className="text-[11px] font-medium text-[#86868b] px-3 mb-2 tracking-tight">
+              Portals
             </div>
             <nav className="space-y-1">
               {navItems.map((item) => {
@@ -75,18 +77,23 @@ export const Sidebar: React.FC = () => {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`flex items-center justify-between px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-200 ${
                       isActive
-                        ? "bg-zinc-800/90 text-white border border-zinc-700 shadow-sm"
-                        : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+                        ? "bg-white/[0.12] text-white shadow-[0_1px_3px_rgba(0,0,0,0.4)] backdrop-blur-md"
+                        : "text-[#86868b] hover:text-[#f5f5f7] hover:bg-white/[0.05]"
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <Icon className={`w-4 h-4 ${isActive ? "text-cyan-400" : "text-zinc-500"}`} />
-                      <span>{item.name}</span>
+                      <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-[#86868b]"}`} strokeWidth={1.75} />
+                      <div className="flex flex-col">
+                        <span className="leading-tight">{item.name}</span>
+                        <span className="text-[10px] text-[#86868b] font-normal">{item.subname}</span>
+                      </div>
                     </div>
                     {item.badge && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-900 text-zinc-400 border border-zinc-800 font-mono">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono ${
+                        isActive ? "bg-white/20 text-white" : "bg-white/[0.06] text-[#86868b]"
+                      }`}>
                         {item.badge}
                       </span>
                     )}
@@ -98,18 +105,18 @@ export const Sidebar: React.FC = () => {
 
           {/* Dynamic Registered Connectors */}
           <div>
-            <div className="text-[10px] uppercase font-semibold text-zinc-500 tracking-wider px-3 mb-2 flex items-center justify-between">
-              <span>Active Connectors ({projects.length})</span>
-              <Activity className="w-3 h-3 text-emerald-400 animate-pulse" />
+            <div className="text-[11px] font-medium text-[#86868b] px-3 mb-2 tracking-tight flex items-center justify-between">
+              <span>Active Engines ({projects.length})</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#30d158] animate-pulse" />
             </div>
             <div className="space-y-1">
               {projects.map((p) => (
                 <div
                   key={p.id}
-                  className="px-3 py-2 rounded-lg bg-zinc-900/40 border border-zinc-900 text-xs flex items-center justify-between"
+                  className="px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.04] text-[12px] flex items-center justify-between text-neutral-300 hover:bg-white/[0.06] transition-colors"
                 >
-                  <div className="truncate font-mono text-zinc-300">{p.name}</div>
-                  <span className={`w-2 h-2 rounded-full ${p.online ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]" : "bg-amber-400"}`} />
+                  <div className="truncate font-medium">{p.name}</div>
+                  <span className={`w-2 h-2 rounded-full ${p.online ? "bg-[#30d158]" : "bg-[#ff9f0a]"}`} />
                 </div>
               ))}
             </div>
@@ -118,14 +125,14 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Extensibility & Status Footer */}
-      <div className="p-4 border-t border-zinc-800/80 bg-zinc-950/60">
-        <div className="p-3 rounded-lg bg-zinc-900/80 border border-zinc-800 text-xs text-zinc-400 space-y-1">
-          <div className="flex items-center gap-1.5 text-zinc-200 font-semibold">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Zero-Intrusion Mode</span>
+      <div className="p-3 border-t border-white/[0.06]">
+        <div className="p-3 rounded-2xl bg-[#161618] border border-white/[0.06] text-[11px] text-[#86868b] space-y-1">
+          <div className="flex items-center gap-1.5 text-white font-medium">
+            <ShieldCheck className="w-3.5 h-3.5 text-[#30d158]" strokeWidth={2} />
+            <span>Zero-Intrusion Bridge</span>
           </div>
-          <p className="text-[11px] text-zinc-500 leading-tight">
-            เชื่อมต่อแบบ Gateway ไม่แก้ไขโค้ดเดิมในแต่ละโปรเจกต์
+          <p className="text-[11px] text-[#86868b] leading-relaxed">
+            Non-invasive connector gateway keeping native bot code intact.
           </p>
         </div>
       </div>

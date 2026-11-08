@@ -8,7 +8,8 @@ backend_dir = Path(__file__).resolve().parent
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
-from config import CORS_ORIGINS
+from fastapi.responses import FileResponse
+from config import CORS_ORIGINS, DAYTRAD_DIR
 from connectors.registry import ConnectorRegistry
 from connectors.edca_connector import EdcaConnector
 from connectors.daytrad_connector import DaytradConnector
@@ -49,6 +50,18 @@ def root():
         "docs_url": "/docs",
         "registered_projects": [p["id"] for p in registry.list_all()]
     }
+
+
+@app.get("/api/v1/download/ea")
+def download_ea():
+    ea_path = DAYTRAD_DIR / "mt5" / "AgenticMT5Bridge.mq5"
+    if ea_path.exists():
+        return FileResponse(
+            str(ea_path),
+            filename="AgenticMT5Bridge.mq5",
+            media_type="application/octet-stream"
+        )
+    return {"error": "EA file not found"}
 
 
 if __name__ == "__main__":

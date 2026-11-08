@@ -16,7 +16,8 @@ import {
   Compass,
   ArrowRight,
   RefreshCw,
-  Wallet
+  Wallet,
+  Download
 } from "lucide-react";
 import { fetchDaytradDetails, getChartImageUrl } from "@/lib/api";
 import { DaytradDetails, ChartItem } from "@/lib/types";
@@ -118,6 +119,14 @@ export default function DaytradPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <a
+            href="http://100.93.63.86:8000/api/v1/download/ea"
+            download="AgenticMT5Bridge.mq5"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-semibold transition-colors"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>ดาวน์โหลดไฟล์ EA (.mq5)</span>
+          </a>
           <span className="text-xs px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-amber-400 font-mono font-medium">
             9 สินทรัพย์: Gold, BTC, ETH, XAG, GBP, EUR, XPT, Oil, Gas
           </span>

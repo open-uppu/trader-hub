@@ -1,0 +1,29 @@
+services:
+  hub_backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: trader_hub_backend
+    restart: unless-stopped
+    ports:
+      - "8005:8000"
+    environment:
+      - HUB_HOST=0.0.0.0
+      - HUB_PORT=8000
+    volumes:
+      - ./backend:/app/hub/backend
+      - ../daytrading:/app/daytrad:ro
+      - ../edca:/app/edca:ro
+
+  hub_frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: trader_hub_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8005
+    depends_on:
+      - hub_backend

@@ -1,0 +1,24 @@
+services:
+  hub_backend:
+    image: trader-hub-backend:latest
+    container_name: trader_hub_backend
+    restart: unless-stopped
+    ports:
+      - "8005:8000"
+    environment:
+      - HUB_HOST=0.0.0.0
+      - HUB_PORT=8000
+    volumes:
+      - D:/daytrading:/app/daytrad:ro
+      - D:/edca:/app/edca:ro
+
+  hub_frontend:
+    image: trader-hub-frontend:latest
+    container_name: trader_hub_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8005
+    depends_on:
+      - hub_backend

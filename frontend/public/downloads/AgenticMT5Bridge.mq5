@@ -105,11 +105,11 @@ void OnTimer()
 {
    SendTelemetry();
    for(int i = 0; i < ArraySize(g_squadSymbols); i++)
-      SendMarketBars(g_squadSymbols[i], InpTimeframe, 120);
+      SendMarketBars(g_squadSymbols[i], InpTimeframe, 250);
    if(InpTimeframe != PERIOD_M15)
    {
       for(int i = 0; i < ArraySize(g_squadSymbols); i++)
-         SendMarketBars(g_squadSymbols[i], PERIOD_M15, 60);
+         SendMarketBars(g_squadSymbols[i], PERIOD_M15, 250);
    }
    PollCommands();
    CheckFileCommands();
@@ -196,6 +196,22 @@ void SendTelemetry()
    json += "\"symbol\":\"" + Symbol() + "\",";
    json += "\"bid\":" + DoubleToString(bid, 2) + ",";
    json += "\"ask\":" + DoubleToString(ask, 2) + ",";
+   json += "\"quotes\":[";
+   bool qfirst = true;
+   for(int qi = 0; qi < ArraySize(g_squadSymbols); qi++)
+   {
+      string bsym = g_squadSymbols[qi];
+      if(!SymbolSelect(bsym, true))
+         continue;
+      double qbid = SymbolInfoDouble(bsym, SYMBOL_BID);
+      double qask = SymbolInfoDouble(bsym, SYMBOL_ASK);
+      if(qbid <= 0 || qask <= 0)
+         continue;
+      if(!qfirst) json += ",";
+      qfirst = false;
+      json += "{\"symbol\":\"" + g_squadSymbols[qi] + "\",\"bid\":" + DoubleToString(qbid, 5) + ",\"ask\":" + DoubleToString(qask, 5) + "}";
+   }
+   json += "],";
    
    // Collect Open Positions for every symbol this bridge instance owns.
    // Filtering by the chart's Symbol() would hide positions on the other two

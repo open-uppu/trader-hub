@@ -14,15 +14,16 @@ from connectors.registry import ConnectorRegistry
 from connectors.edca_connector import EdcaConnector
 from connectors.daytrad_connector import DaytradConnector
 from routers.projects import router as projects_router, init_router
-from routers.telemetry import router as telemetry_router
+from routers.telemetry import router as telemetry_router, init_telemetry
 
 # Initialize Registry and Register Connectors
 registry = ConnectorRegistry()
 registry.register(EdcaConnector())
 registry.register(DaytradConnector())
 
-# Pass registry to router
+# Pass registry to routers
 init_router(registry)
+init_telemetry(registry)
 
 app = FastAPI(
     title="Trader Central Hub API",

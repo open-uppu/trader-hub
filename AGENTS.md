@@ -12,6 +12,7 @@
 - **Dynamic API Resolution**:
   - `frontend/src/lib/api.ts` resolves `API_BASE` dynamically using `window.location.hostname`.
   - When accessed via Tailscale IP (`100.x.x.x`), it targets the corresponding backend port automatically without hardcoding `127.0.0.1`.
+- **Realtime stream**: the portal uses `ws://<page-host>/ws/telemetry` (proxied by `frontend/server.js` to the hub backend). The backend pushes a daytrad tick about once a second and a full snapshot about every 15 seconds. HTTP `/api/v1/*` remains the bootstrap and image path.
 
 ## 2. Core Domain Contracts
 - **Daytrad (9 Multi-Asset Specialists)**:

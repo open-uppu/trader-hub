@@ -109,6 +109,31 @@ export async function fetchDaytradBars(symbol: string): Promise<CandleBar[]> {
   }
 }
 
+export function getWsCandidates(): string[] {
+  if (typeof window === "undefined") return [];
+  const wsProto = window.location.protocol === "https:" ? "wss:" : "ws:";
+  const host = window.location.hostname;
+  const sameOrigin = `${wsProto}//${window.location.host}/ws/telemetry`;
+  const apiBase = getApiBase();
+  const urls: string[] = [];
+
+  if (apiBase.startsWith("http")) {
+    urls.push(`${apiBase.replace(/^http/, "ws").replace(/\/$/, "")}/ws/telemetry`);
+  }
+  if (host !== "localhost" && host !== "127.0.0.1") {
+    // Remote Tailscale clients must stay on the page origin. A cross-port
+    // socket to :8005 is the same failure mode as a cross-port fetch.
+    urls.push(sameOrigin);
+    urls.push(`${wsProto}//${host}:8005/ws/telemetry`);
+    urls.push(`${wsProto}//${host}:8000/ws/telemetry`);
+  } else {
+    urls.push(`${wsProto}//127.0.0.1:8000/ws/telemetry`);
+    urls.push(`${wsProto}//127.0.0.1:8005/ws/telemetry`);
+    urls.push(sameOrigin);
+  }
+  return Array.from(new Set(urls));
+}
+
 export function getChartImageUrl(filename: string): string {
   const base = getApiBase();
   return `${base}/api/v1/projects/daytrad/charts/${filename}`;

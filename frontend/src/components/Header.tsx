@@ -2,10 +2,15 @@
 
 import React, { useState, useEffect } from "react";
 import { Clock, Globe } from "lucide-react";
+import { useLive } from "@/lib/live";
 
 export const Header: React.FC = () => {
+  const { status, latencyMs } = useLive();
   const [bkkTime, setBkkTime] = useState<string>("");
   const [nyTime, setNyTime] = useState<string>("");
+  const live = status === "live";
+  const tone = live ? "#30d158" : status === "offline" ? "#ff453a" : "#ff9f0a";
+  const label = live ? "WS Live" : status === "offline" ? "WS Offline" : "WS Connecting";
 
   useEffect(() => {
     const updateTime = () => {
@@ -61,9 +66,13 @@ export const Header: React.FC = () => {
         </div>
 
         {/* Live Status Indicator */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#30d158]/10 border border-[#30d158]/20 text-[#30d158] text-[11px] font-medium">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#30d158] animate-pulse" />
-          <span className="hidden sm:inline">Connected</span>
+        <div
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border"
+          style={{ color: tone, backgroundColor: `${tone}1a`, borderColor: `${tone}33` }}
+          title={latencyMs != null ? `WebSocket round-trip ${latencyMs} ms` : "WebSocket stream"}
+        >
+          <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: tone }} />
+          <span className="hidden sm:inline">{label}{live && latencyMs != null ? ` ${latencyMs}ms` : ""}</span>
         </div>
       </div>
     </header>

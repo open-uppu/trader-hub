@@ -11,6 +11,7 @@
     - `edca_connector`: นำเข้าโมดูลวิเคราะห์พอร์ตและคำแนะนำ AI Advisor จาก `edca`
     - `daytrad_connector`: สแกนภาพกราฟแท่งเทียน, บันทึกการเรียนรู้ (Learned Rules), และ Daily Target จาก `daytrad`
 - **Frontend:** Next.js 14+ (App Router) + TypeScript + Tailwind CSS รันที่พอร์ต `3000`
+  - สตรีมสดผ่าน WebSocket `/ws/telemetry` (ไม่โพลทุก 4 วินาที) — ตัวเลขพอร์ต ไม้ที่เปิด และแท่งเทียนอัปเดตทันทีที่เซิร์ฟเวอร์พุช
   - ธีม Dark Mode สไตล์ FinTech Terminal
   - หน้า Overview สรุปรวมทุกโปรเจกต์
   - หน้า Daytrad Console ดูภาพกราฟแท่งเทียนและกฎที่บอทเรียนรู้

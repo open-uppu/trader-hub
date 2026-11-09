@@ -36,6 +36,37 @@ def test_daytrad_connector_summary():
     assert "message" in summary["execution_status"]
 
 
+def test_stream_tick_from_snapshot_does_not_touch_network():
+    connector = DaytradConnector()
+    snapshot = {
+        "type": "snapshot",
+        "account": {
+            "balance": 500.0,
+            "equity": 512.5,
+            "floating_pnl": 12.5,
+            "connected": True,
+            "account_number": 416568420,
+            "server": "Exness-MT5Trial14",
+            "mode": "MT5 LIVE",
+        },
+        "portfolio": {
+            "starting_balance": 500.0,
+            "realized_pnl_usd": 2.0,
+            "daily_return_pct": 0.4,
+        },
+        "open_positions": [{"symbol": "XAUUSD", "profit": 12.5, "type": "BUY"}],
+        "closed_orders": [],
+        "bars": [{"time": 1, "open": 1, "high": 2, "low": 0.5, "close": 1.5, "volume": 10}],
+    }
+    tick = connector._tick_from_snapshot(snapshot, "XAUUSD", "M5")
+    assert tick["account"]["equity"] == 512.5
+    assert tick["account"]["floating_pnl"] == 12.5
+    assert tick["summary"]["daily_pnl_usd"] == 2.0
+    assert tick["execution_status"]["state"] == "IN_POSITION"
+    assert tick["bars"][-1]["close"] == 1.5
+    assert connector.get_stream_tick("bad symbol", "M5") is None
+
+
 def test_daytrad_connector_details():
     connector = DaytradConnector()
     details = connector.get_details()

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { 
   PieChart, 
   TrendingUp, 
@@ -15,38 +15,20 @@ import {
   Radar,
   Info
 } from "lucide-react";
-import { fetchEdcaDetails } from "@/lib/api";
-import { EdcaDetails } from "@/lib/types";
+import { useLive } from "@/lib/live";
 import { MetricCard } from "@/components/MetricCard";
 import { StatusBadge } from "@/components/StatusBadge";
 
 export default function EdcaPage() {
-  const [data, setData] = useState<EdcaDetails | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { edca: data, status, reconnect } = useLive();
+  const loading = !data && status !== "offline";
+  const error = !data && status === "offline"
+    ? "ไม่สามารถเชื่อมต่อ WebSocket ของ Hub ได้"
+    : null;
 
   const loadData = () => {
-    setLoading(true);
-    setError(null);
-    fetchEdcaDetails()
-      .then((res) => {
-        if (!res) {
-          setError("ไม่สามารถเชื่อมต่อ Trader Central Hub Backend ได้ (พอร์ต 8000 ออฟไลน์)");
-        } else {
-          setData(res);
-        }
-      })
-      .catch((err) => {
-        setError("เกิดข้อผิดพลาดในการดึงข้อมูล EDCA: " + String(err));
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+    reconnect();
   };
-
-  useEffect(() => {
-    loadData();
-  }, []);
 
   if (loading) {
     return (

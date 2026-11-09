@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
@@ -12,16 +12,11 @@ import {
   Command,
   ChevronRight
 } from "lucide-react";
-import { fetchProjects } from "@/lib/api";
-import { ProjectItem } from "@/lib/types";
+import { useLive } from "@/lib/live";
 
 export const Sidebar: React.FC = () => {
   const pathname = usePathname();
-  const [projects, setProjects] = useState<ProjectItem[]>([]);
-
-  useEffect(() => {
-    fetchProjects().then(setProjects);
-  }, []);
+  const { projects, status } = useLive();
 
   const navItems = [
     {
@@ -107,7 +102,7 @@ export const Sidebar: React.FC = () => {
           <div>
             <div className="text-[11px] font-medium text-[#86868b] px-3 mb-2 tracking-tight flex items-center justify-between">
               <span>Active Engines ({projects.length})</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-[#30d158] animate-pulse" />
+              <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${status === "live" ? "bg-[#30d158]" : "bg-[#ff9f0a]"}`} />
             </div>
             <div className="space-y-1">
               {projects.map((p) => (

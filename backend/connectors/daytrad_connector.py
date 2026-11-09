@@ -1,10 +1,12 @@
 import os
+import re
 import socket
 import json
+import time
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 
 from .base import BaseConnector
 from config import DAYTRAD_DIR
@@ -33,6 +35,7 @@ class DaytradConnector(BaseConnector):
         self.artifacts_dir = DAYTRAD_DIR / "artifacts"
         self.charts_dir = self.artifacts_dir / "charts"
         self.journal_dir = DAYTRAD_DIR / "journal"
+        self._stream_fail_until: Dict[Tuple[str, int], float] = {}
 
     def _is_bridge_online(self) -> bool:
         """Check if local or network daytrad MT4/MT5 bridge is actively listening."""
@@ -82,6 +85,115 @@ class DaytradConnector(BaseConnector):
                 except Exception:
                     continue
         return results
+
+    def _endpoints(self) -> List[Tuple[str, int]]:
+        candidate_hosts = [h for h in [os.getenv("DAYTRAD_HOST"), "host.docker.internal", "100.105.249.12", "127.0.0.1"] if h]
+        ports = [self.bridge_port, 8000, 8001, 8080]
+        seen = set()
+        endpoints = []
+        for host in candidate_hosts:
+            for port in ports:
+                if host in ("127.0.0.1", "localhost") and port == 8000 and not os.getenv("DAYTRAD_PORT"):
+                    continue
+                key = (host, int(port))
+                if key in seen:
+                    continue
+                seen.add(key)
+                endpoints.append(key)
+        return endpoints
+
+    def _fetch_symbol_snapshot(self, symbol: str, timeframe: str) -> Optional[Dict[str, Any]]:
+        """One bridge snapshot for a symbol. Dead endpoints are skipped for a few seconds."""
+        now = time.monotonic()
+        fallback = None
+        for host, port in self._endpoints():
+            if self._stream_fail_until.get((host, port), 0) > now:
+                continue
+            try:
+                url = (
+                    f"http://{host}:{port}/api/dashboard/snapshot"
+                    f"?symbol={symbol}&timeframe={timeframe}"
+                )
+                req = urllib.request.Request(url, headers={"User-Agent": "TraderHubStream/1.0"})
+                with urllib.request.urlopen(req, timeout=0.45) as response:
+                    data = json.loads(response.read().decode("utf-8"))
+                if isinstance(data, dict) and data.get("type") == "snapshot":
+                    self._stream_fail_until.pop((host, port), None)
+                    if data.get("bars"):
+                        return data
+                    fallback = fallback or data
+                else:
+                    self._stream_fail_until[(host, port)] = now + 8.0
+            except Exception:
+                self._stream_fail_until[(host, port)] = now + 8.0
+        return fallback
+
+    def _tick_from_snapshot(self, snapshot: Dict[str, Any], symbol: str, timeframe: str) -> Dict[str, Any]:
+        portfolio = snapshot.get("portfolio") or {}
+        acc = snapshot.get("account") or {}
+        balance = float(acc.get("balance", 10000.0) or 10000.0)
+        equity = float(acc.get("equity", balance) or balance)
+        floating_pnl = float(acc.get("floating_pnl", 0.0) or 0.0)
+        starting_bal = float(portfolio.get("starting_balance", balance) or balance)
+        if starting_bal == 10000.0 and balance < 1000.0:
+            daily_pnl = 0.0
+            daily_pct = 0.0
+        else:
+            daily_pnl = float(portfolio.get("realized_pnl_usd", 0.0) or 0.0)
+            daily_pct = float(portfolio.get("daily_return_pct", 0.0) or 0.0)
+        connected = bool(acc.get("connected", False))
+        exec_status = self._compute_execution_status(snapshot, connected)
+        account = {
+            "account_number": str(acc.get("account_number", "99999999")),
+            "server": acc.get("server", "PaperTrading-Simulation"),
+            "mode": acc.get("mode", "LIVE"),
+            "balance": balance,
+            "equity": equity,
+            "floating_pnl": floating_pnl,
+            "realized_pnl": daily_pnl,
+            "daily_return_pct": daily_pct,
+            "connected": connected,
+            "last_sync": acc.get("last_sync") or datetime.now(timezone.utc).isoformat(),
+            "bid": acc.get("bid"),
+            "ask": acc.get("ask"),
+        }
+        bars = snapshot.get("bars") or []
+        if not isinstance(bars, list):
+            bars = []
+        return {
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "account": account,
+            "portfolio": portfolio,
+            "open_positions": snapshot.get("open_positions") or [],
+            "closed_orders": snapshot.get("closed_orders") or [],
+            "specialists": snapshot.get("specialists"),
+            "execution_status": exec_status,
+            "summary": {
+                "base_capital_usd": balance,
+                "current_equity_usd": equity,
+                "daily_target_usd": round(balance * 0.03, 2),
+                "max_loss_usd": round(balance * 0.05, 2),
+                "daily_pnl_usd": daily_pnl,
+                "daily_return_pct": daily_pct,
+                "floating_pnl_usd": floating_pnl,
+                "bot_status": "ONLINE (Looping)" if connected else "STANDBY (Squad Ready)",
+                "execution_status": exec_status,
+                "account": account,
+            },
+            "bars": bars[-180:],
+        }
+
+    def get_stream_tick(self, symbol: str = "XAUUSD", timeframe: str = "M5") -> Optional[Dict[str, Any]]:
+        """Lightweight live frame for the websocket. None when no bridge answers."""
+        symbol = (symbol or "XAUUSD").upper()
+        timeframe = (timeframe or "M5").upper()
+        if not re.fullmatch(r"[A-Z0-9]{3,12}", symbol) or not re.fullmatch(r"M\d{1,3}|H\d{1,2}", timeframe):
+            return None
+        snapshot = self._fetch_symbol_snapshot(symbol, timeframe)
+        if not snapshot:
+            return None
+        return self._tick_from_snapshot(snapshot, symbol, timeframe)
 
     def get_bars(self, symbol: str, timeframe: str = "M5") -> List[Dict[str, Any]]:
         """OHLC bars for one symbol from the first bridge that answers with bars."""

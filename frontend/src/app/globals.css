@@ -60,3 +60,21 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 1rem;
 }
+
+.metric-up {
+  animation: metric-up 0.7s ease-out;
+}
+
+.metric-down {
+  animation: metric-down 0.7s ease-out;
+}
+
+@keyframes metric-up {
+  0% { color: #30d158; }
+  100% { color: inherit; }
+}
+
+@keyframes metric-down {
+  0% { color: #ff453a; }
+  100% { color: inherit; }
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { 
   TrendingUp, 
   ShieldAlert, 
@@ -22,31 +22,14 @@ import {
   ArrowUpRight,
   ArrowDownRight
 } from "lucide-react";
-import { fetchDaytradDetails, fetchDaytradBars, getChartImageUrl, CandleBar } from "@/lib/api";
-import { DaytradDetails, ChartItem } from "@/lib/types";
+import { getChartImageUrl, CandleBar } from "@/lib/api";
+import { ChartItem } from "@/lib/types";
 import { StatusBadge } from "@/components/StatusBadge";
+import { LiveNumber } from "@/components/LiveNumber";
+import { useLive } from "@/lib/live";
 
 // Candlestick chart drawn from the Daytrad bridge's own M5 bars (no external widget)
-function CandleChart({ symbol }: { symbol: string }) {
-  const [bars, setBars] = useState<CandleBar[]>([]);
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    let alive = true;
-    setLoaded(false);
-    const load = async () => {
-      const next = await fetchDaytradBars(symbol);
-      if (!alive) return;
-      setBars(next);
-      setLoaded(true);
-    };
-    load();
-    const timer = setInterval(load, 5000);
-    return () => {
-      alive = false;
-      clearInterval(timer);
-    };
-  }, [symbol]);
+function CandleChart({ symbol, bars, loaded }: { symbol: string; bars: CandleBar[]; loaded: boolean }) {
 
   const frame = "w-full h-[460px] bg-[#0a0a0c] rounded-2xl overflow-hidden border border-white/[0.08] flex items-center justify-center text-[#86868b] text-[12px] font-mono";
   const view = bars.slice(-120);
@@ -80,8 +63,8 @@ function CandleChart({ symbol }: { symbol: string }) {
   return (
     <div className="w-full bg-[#0a0a0c] rounded-2xl overflow-hidden border border-white/[0.08] p-4">
       <div className="flex justify-between text-[11px] font-mono text-[#86868b] mb-2">
-        <span>{symbol} · M5 · live bridge</span>
-        <span className="text-white">{last.close.toFixed(decimals)}</span>
+        <span>{symbol} · M5 · websocket</span>
+        <LiveNumber value={last.close} className="text-white" format={(n) => n.toFixed(decimals)} />
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto">
         {ticks.map((t, i) => (
@@ -276,44 +259,38 @@ const PRE_TRADE_CONFIGS = [
 ];
 
 export default function DaytradPage() {
-  const [data, setData] = useState<DaytradDetails | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastSyncTime, setLastSyncTime] = useState<string>("");
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const {
+    daytrad: data,
+    status,
+    bars,
+    barSymbol,
+    setBarSubscription,
+    reconnect,
+    lastEventAt,
+    latencyMs,
+  } = useLive();
   const [selectedChart, setSelectedChart] = useState<ChartItem | null>(null);
   const [activeTab, setActiveTab] = useState<"rules" | "mistakes">("rules");
   const [activeChartSymbol, setActiveChartSymbol] = useState<string>("XAUUSD");
-
-  const loadData = (silent = false) => {
-    if (!silent) setLoading(true);
-    setIsRefreshing(true);
-    fetchDaytradDetails()
-      .then((res) => {
-        if (!res) {
-          if (!silent) setError("ไม่สามารถเชื่อมต่อ Trader Central Hub Backend ได้ (พอร์ต 8000 ออฟไลน์)");
-        } else {
-          setData(res);
-          setError(null);
-          setLastSyncTime(new Date().toLocaleTimeString());
-        }
-      })
-      .catch((err) => {
-        if (!silent) setError("เกิดข้อผิดพลาดในการดึงข้อมูล Daytrad: " + String(err));
-      })
-      .finally(() => {
-        setLoading(false);
-        setIsRefreshing(false);
-      });
-  };
+  const loading = !data && status !== "offline";
+  const error = !data && status === "offline"
+    ? "ไม่สามารถเชื่อมต่อ WebSocket ของ Hub ได้"
+    : null;
+  const lastSyncTime = lastEventAt ? new Date(lastEventAt).toLocaleTimeString() : "";
+  const isRefreshing = status === "connecting" || status === "reconnecting";
+  const streamLabel = status === "live"
+    ? `WebSocket live${latencyMs != null ? ` · ${latencyMs}ms` : ""}`
+    : status === "offline"
+      ? "WebSocket offline"
+      : "WebSocket connecting";
 
   useEffect(() => {
-    loadData();
-    const timer = setInterval(() => {
-      loadData(true);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, []);
+    setBarSubscription(activeChartSymbol, "M5");
+  }, [activeChartSymbol, setBarSubscription]);
+
+  const loadData = () => {
+    reconnect();
+  };
 
   if (loading) {
     return (
@@ -337,7 +314,7 @@ export default function DaytradPage() {
           </p>
         </div>
         <button
-          onClick={() => loadData(false)}
+          onClick={() => loadData()}
           className="px-5 py-2 rounded-full bg-white text-black hover:bg-neutral-200 font-medium text-[12px] transition-all active:scale-[0.98]"
         >
           ลองใหม่อีกครั้ง
@@ -346,7 +323,7 @@ export default function DaytradPage() {
     );
   }
 
-  const { summary, account, charts, learned_rules, mistakes_database, execution_status, specialists, open_positions, closed_orders } = data;
+  const { summary, account, charts = [], learned_rules, mistakes_database, execution_status, open_positions, closed_orders } = data;
   const execStatus = execution_status || summary.execution_status;
   const currentAccount = account || summary.account;
   const balance = Number(currentAccount?.balance || summary.base_capital_usd || 497.60);
@@ -361,7 +338,7 @@ export default function DaytradPage() {
             <h1 className="text-2xl font-semibold text-white tracking-tight">
               Daytrad Console (9 Specialists Squad)
             </h1>
-            <StatusBadge status={summary.bot_status.includes("ONLINE") ? "active" : "standby"} />
+            <StatusBadge status={String(summary.bot_status || "").includes("ONLINE") ? "active" : "standby"} />
           </div>
           <p className="text-[13px] text-[#86868b]">
             คอนโซลควบคุม 9 หน่วยรบ (Gold, Crypto, Forex, Energy) พร้อมกราฟแท่งเทียนสด, กราฟวงกลมเป้าหมาย 3% และรายละเอียดคำสั่งซื้อ
@@ -392,7 +369,7 @@ export default function DaytradPage() {
         <div className="flex flex-wrap items-center gap-3">
           <span className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-[#30d158] animate-pulse" />
-            <span className="font-medium text-white">Live MT5 Stream (4s)</span>
+            <span className="font-medium text-white">{streamLabel}</span>
           </span>
           <span className="text-white/20 hidden sm:inline">•</span>
           <span className="text-[#86868b]">
@@ -407,7 +384,7 @@ export default function DaytradPage() {
         <div className="flex items-center gap-3 text-[#86868b]">
           <span className="text-[11px]">Updated: {lastSyncTime || "Syncing..."}</span>
           <button 
-            onClick={() => loadData(false)}
+            onClick={() => loadData()}
             disabled={isRefreshing}
             className="p-1.5 rounded-full hover:bg-white/[0.08] text-neutral-300 hover:text-white transition-colors"
             title="Refresh now"
@@ -429,7 +406,10 @@ export default function DaytradPage() {
           </div>
           <div>
             <div className="text-2xl sm:text-3xl font-semibold text-white tracking-tight tabular-nums font-mono">
-              ${(currentAccount?.equity || summary.current_equity_usd || balance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <LiveNumber
+                value={Number(currentAccount?.equity || summary.current_equity_usd || balance)}
+                format={(n) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              />
             </div>
             <div className="text-[11px] text-[#86868b] mt-1">
               มูลค่าพอร์ตรวมไม้ที่ถืออยู่
@@ -451,7 +431,10 @@ export default function DaytradPage() {
           </div>
           <div>
             <div className="text-2xl sm:text-3xl font-semibold text-white tracking-tight tabular-nums font-mono">
-              ${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <LiveNumber
+                value={balance}
+                format={(n) => `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              />
             </div>
             <div className="text-[11px] text-[#86868b] mt-1">
               เงินสดว่างพร้อมออกออเดอร์
@@ -475,12 +458,14 @@ export default function DaytradPage() {
             </span>
           </div>
           <div>
-            <div className={`text-2xl sm:text-3xl font-semibold tracking-tight tabular-nums font-mono ${
-              (currentAccount?.floating_pnl || 0) > 0 ? "text-[#30d158]" :
-              (currentAccount?.floating_pnl || 0) < 0 ? "text-[#ff453a]" : "text-white"
-            }`}>
-              {(currentAccount?.floating_pnl || 0) >= 0 ? `+$${(currentAccount?.floating_pnl || 0).toFixed(2)}` : `-$${Math.abs(currentAccount?.floating_pnl || 0).toFixed(2)}`}
-            </div>
+            <LiveNumber
+              value={Number(currentAccount?.floating_pnl || 0)}
+              className={`text-2xl sm:text-3xl font-semibold tracking-tight tabular-nums font-mono ${
+                (currentAccount?.floating_pnl || 0) > 0 ? "text-[#30d158]" :
+                (currentAccount?.floating_pnl || 0) < 0 ? "text-[#ff453a]" : "text-white"
+              }`}
+              format={(n) => (n >= 0 ? `+$${n.toFixed(2)}` : `-$${Math.abs(n).toFixed(2)}`)}
+            />
             <div className="text-[11px] text-[#86868b] mt-1">
               กำไร/ขาดทุนไม้ที่ยังไม่ปิด
             </div>
@@ -500,12 +485,14 @@ export default function DaytradPage() {
             </span>
           </div>
           <div>
-            <div className={`text-2xl sm:text-3xl font-semibold tracking-tight tabular-nums font-mono ${
-              (summary.daily_pnl_usd || 0) > 0 ? "text-[#30d158]" :
-              (summary.daily_pnl_usd || 0) < 0 ? "text-[#ff453a]" : "text-white"
-            }`}>
-              {(summary.daily_pnl_usd || 0) >= 0 ? `+$${(summary.daily_pnl_usd || 0).toFixed(2)}` : `-$${Math.abs(summary.daily_pnl_usd || 0).toFixed(2)}`}
-            </div>
+            <LiveNumber
+              value={Number(summary.daily_pnl_usd || 0)}
+              className={`text-2xl sm:text-3xl font-semibold tracking-tight tabular-nums font-mono ${
+                (summary.daily_pnl_usd || 0) > 0 ? "text-[#30d158]" :
+                (summary.daily_pnl_usd || 0) < 0 ? "text-[#ff453a]" : "text-white"
+              }`}
+              format={(n) => (n >= 0 ? `+$${n.toFixed(2)}` : `-$${Math.abs(n).toFixed(2)}`)}
+            />
             <div className="text-[11px] text-[#86868b] mt-1">
               {currentPct >= 0 ? `+${currentPct.toFixed(2)}%` : `${currentPct.toFixed(2)}%`} (Goal: +${(balance * 0.03).toFixed(2)})
             </div>
@@ -578,7 +565,11 @@ export default function DaytradPage() {
           </div>
         </div>
 
-        <CandleChart symbol={activeChartSymbol} />
+        <CandleChart
+          symbol={activeChartSymbol}
+          bars={barSymbol === activeChartSymbol ? bars : []}
+          loaded={status !== "connecting" || bars.length > 0}
+        />
       </section>
 
       {/* ==================================================================== */}

@@ -17,8 +17,8 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - ./backend:/app/hub/backend
-      - D:/daytrading:/app/daytrad:ro
-      - D:/edca:/app/edca:ro
+      - ../daytrad:/app/daytrad:ro
+      - ../edca:/app/edca:ro
 
   hub_frontend:
     build:
@@ -31,5 +31,6 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8005
+      - HUB_BACKEND_URL=http://hub_backend:8000
     depends_on:
       - hub_backend

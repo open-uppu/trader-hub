@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { 
   TrendingUp, 
@@ -12,32 +12,12 @@ import {
   Layers,
   ArrowRight
 } from "lucide-react";
-import { fetchProjects, fetchEdcaDetails, fetchDaytradDetails } from "@/lib/api";
-import { ProjectItem, EdcaDetails, DaytradDetails } from "@/lib/types";
+import { useLive } from "@/lib/live";
+import { LiveNumber } from "@/components/LiveNumber";
 
 export default function OverviewPage() {
-  const [projects, setProjects] = useState<ProjectItem[]>([]);
-  const [edca, setEdca] = useState<EdcaDetails | null>(null);
-  const [daytrad, setDaytrad] = useState<DaytradDetails | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [pList, eData, dData] = await Promise.all([
-          fetchProjects(),
-          fetchEdcaDetails(),
-          fetchDaytradDetails()
-        ]);
-        setProjects(pList);
-        setEdca(eData);
-        setDaytrad(dData);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadData();
-  }, []);
+  const { edca, daytrad, status } = useLive();
+  const streamLabel = status === "live" ? "WebSocket" : status === "offline" ? "WS Offline" : "WS Connecting";
 
   // Aggregated values
   const daytradEquity = daytrad?.account?.equity || daytrad?.summary?.current_equity_usd || 10000.0;
@@ -75,7 +55,10 @@ export default function OverviewPage() {
 
             <div className="flex flex-col sm:flex-row sm:items-baseline gap-3 sm:gap-4">
               <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight text-white tabular-nums">
-                ${totalWealthUsd.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <LiveNumber
+                  value={totalWealthUsd}
+                  format={(n) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                />
               </h1>
               <span className="text-base sm:text-lg text-[#86868b] font-mono">
                 ≈ ฿{totalWealthThb.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -87,8 +70,15 @@ export default function OverviewPage() {
             </p>
 
             <div className="flex flex-wrap items-center gap-2 pt-1">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#30d158]/10 text-[#30d158] text-[11px] font-medium border border-[#30d158]/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#30d158]" />
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium border ${
+                status === "live"
+                  ? "bg-[#30d158]/10 text-[#30d158] border-[#30d158]/20"
+                  : "bg-[#ff9f0a]/10 text-[#ff9f0a] border-[#ff9f0a]/20"
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${status === "live" ? "bg-[#30d158] animate-pulse" : "bg-[#ff9f0a]"}`} />
+                {streamLabel}
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.05] text-[#86868b] text-[11px] font-medium border border-white/[0.08]">
                 Daily Target: 3.0%
               </span>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.05] text-[#86868b] text-[11px] font-medium border border-white/[0.08]">

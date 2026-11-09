@@ -25,5 +25,6 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8005
+      - HUB_BACKEND_URL=http://hub_backend:8000
     depends_on:
       - hub_backend

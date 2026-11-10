@@ -36,6 +36,8 @@ def test_edca_connector_details():
     assert len(details["weekly_execution"]["allocations"]) > 0
     assert "advisory" in details
     assert "optimal_day" in details
+    assert "previous_week" in details
+    assert "week_id" in details
     assert "missing 1 required positional argument" not in details["advisory"]
 
     # 50 THB minimum order rule verification

@@ -61,7 +61,7 @@ export default function EdcaPage() {
     );
   }
 
-  const { summary, holdings, weekly_execution, advisory, optimal_day, scanner_opportunities } = data;
+  const { summary, holdings, weekly_execution, advisory, optimal_day, scanner_opportunities, previous_week, week_id } = data;
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto py-2">
@@ -158,7 +158,7 @@ export default function EdcaPage() {
                 </h2>
               </div>
               <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-white/[0.06] text-[#86868b]">
-                Gemini Multi-Factor
+                {week_id ? `${week_id} · Gemini Multi-Factor` : "Gemini Multi-Factor"}
               </span>
             </div>
 
@@ -205,6 +205,67 @@ export default function EdcaPage() {
           )}
         </div>
       </div>
+
+      {/* Last week's archived advisory */}
+      <section className="p-6 rounded-3xl bg-[#161618] border border-white/[0.08] space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-[#86868b]" />
+            <h2 className="text-base font-semibold text-white tracking-tight">
+              AI Weekly Investment Advisory · สัปดาห์ที่แล้ว
+            </h2>
+          </div>
+          {previous_week?.week_id && (
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-white/[0.06] text-[#86868b] font-mono">
+              {previous_week.week_id}
+              {previous_week.reconstructed ? " · reconstructed" : ""}
+            </span>
+          )}
+        </div>
+
+        {previous_week ? (
+          <div className="space-y-4">
+            <p className="text-[12px] text-[#86868b]">
+              คลังวันที่ {previous_week.week_start} → {previous_week.week_end}
+              {previous_week.as_of ? ` · ข้อมูล ณ ${previous_week.as_of}` : ""}
+              {previous_week.optimal_day ? ` · ${previous_week.optimal_day}` : ""}
+            </p>
+            {previous_week.weekly_execution && (
+              <div className="flex flex-wrap gap-3 text-[12px] font-mono">
+                <span className="px-3 py-1 rounded-full bg-black/40 border border-white/[0.06] text-white">
+                  ฿{(previous_week.weekly_execution.invest_amount_thb ?? 0).toLocaleString()}
+                </span>
+                <span className="px-3 py-1 rounded-full bg-black/40 border border-white/[0.06] text-neutral-300">
+                  {(previous_week.weekly_execution.multiplier ?? 0).toFixed(2)}x
+                </span>
+              </div>
+            )}
+            <div className="p-4 rounded-2xl bg-black/40 border border-white/[0.05] text-[12px] text-neutral-300 leading-relaxed whitespace-pre-wrap max-h-56 overflow-y-auto">
+              {previous_week.advisory}
+            </div>
+            {previous_week.weekly_execution?.allocations?.filter((a) => a.allocated_thb > 0).length ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {previous_week.weekly_execution.allocations
+                  .filter((alloc) => alloc.allocated_thb > 0)
+                  .map((alloc) => (
+                    <div key={alloc.ticker} className="p-3 rounded-2xl bg-black/40 border border-white/[0.06] text-[12px] flex items-center justify-between">
+                      <div>
+                        <div className="font-semibold text-white font-mono">{alloc.ticker}</div>
+                        <div className="text-[11px] text-[#86868b] mt-0.5">{alloc.reason}</div>
+                      </div>
+                      <div className="font-semibold text-white font-mono">฿{alloc.allocated_thb.toLocaleString()}</div>
+                    </div>
+                  ))}
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <p className="text-[12px] text-[#86868b] leading-relaxed">
+            ยังไม่มีคลังสัปดาห์ที่แล้ว ระบบจะบันทึกอัตโนมัติทุกครั้งที่สร้างคำแนะนำ (ไฟล์ใน{" "}
+            <span className="font-mono text-neutral-400">edca/data/advisories/</span>)
+          </p>
+        )}
+      </section>
 
       {/* Asset Ranking & Queue Leaderboard */}
       {weekly_execution.allocations && weekly_execution.allocations.length > 0 && (

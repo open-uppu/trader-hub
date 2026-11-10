@@ -1,5 +1,7 @@
 # Trader Central Hub - Operational Directives & Architecture
 
+> Workspace-wide rules (skill/plugin/MCP use, repo map, commands, safety) live in [../AGENTS.md](../AGENTS.md). Read that file first if it is not already in your context.
+
 ## 1. Network & Tailscale Architecture
 - **Multi-Device Setup**:
   - Mac (`100.93.63.86` / `localhost`): Main development workstation.
@@ -23,7 +25,10 @@
   - Budget < 50 THB rolls into Cash Buffer.
   - Budget 50-99 THB consolidates into 1 order for top candidate.
   - Budget >= 100 THB splits across 2 candidates with >= 50 THB per order.
+  - Budget >= 150 THB with both radar A+/A names and an existing discounted holding splits across 3 lots (up to 2 NEW ENTRY + 1 ACCUMULATE) so names like NVDA/META/DELTA are not dropped.
   - High-grade new stocks (A+/A) from `market_scanner` are allocated as `NEW ENTRY (BUY)`.
+  - Thai SET names (DELTA, BDMS, SCB, …) are **whole shares only** (minimum 1 share, no fractions). Cash that cannot buy 1 share is rolled to US lots (Dime! allows fractional US) or Cash Buffer.
 
 ## 3. Performance & Caching Safeguards
 - `edca_connector`: In-memory TTL cache for Market Scanner (5 min) and AI Advisory (10 min) to prevent slow synchronous Yahoo Finance or LLM network blocking.
+- **Weekly advisory archive**: each generated AI Weekly Investment Advisory is persisted under `edca/data/advisories/{YYYY-Www}.json` (+ `.md`). Past weeks are immutable. Hub `get_details()` exposes `previous_week` from that archive (read-only Docker mount is fine for reads; writes fall back to `hub/backend/data/edca_advisories/`). Reconstruct a missing past week with `python cli.py archive backfill`.

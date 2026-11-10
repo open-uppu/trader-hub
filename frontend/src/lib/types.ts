@@ -31,6 +31,7 @@ export interface AssetAllocation {
   percentage: number;
   action: string;
   reason: string;
+  shares?: number;
 }
 
 export interface OpportunityItem {
@@ -50,6 +51,26 @@ export interface MinOrderRule {
   platform: string;
   enforced: boolean;
   description: string;
+}
+
+export interface WeeklyAdvisoryArchive {
+  week_id: string;
+  week_start: string;
+  week_end: string;
+  as_of?: string;
+  reconstructed?: boolean;
+  generated_at?: string;
+  advisory: string;
+  optimal_day?: string;
+  weekly_execution?: {
+    base_budget: number;
+    multiplier: number;
+    invest_amount_thb: number;
+    buffer_action?: string;
+    allocations: AssetAllocation[];
+  };
+  scanner_opportunities?: OpportunityItem[];
+  scanner_brief?: string;
 }
 
 export interface EdcaDetails {
@@ -75,6 +96,8 @@ export interface EdcaDetails {
   min_order_rule?: MinOrderRule;
   advisory: string;
   optimal_day: string;
+  week_id?: string | null;
+  previous_week?: WeeklyAdvisoryArchive | null;
 }
 
 export interface ChartItem {

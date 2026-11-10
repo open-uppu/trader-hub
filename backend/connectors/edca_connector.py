@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 from .base import BaseConnector
 from config import EDCA_DIR
@@ -11,11 +11,25 @@ if edca_str not in sys.path:
     sys.path.insert(0, edca_str)
 
 try:
+    from advisor.archive import (
+        load_snapshot,
+        previous_week_id,
+        save_snapshot,
+        snapshot_to_hub,
+        week_bounds,
+        week_id_for,
+    )
+    ARCHIVE_LOADED = True
+except Exception:
+    ARCHIVE_LOADED = False
+
+try:
     from portfolio.rebalancer import Holding, filter_and_allocate, MIN_ORDER_THB
     from core.edca_engine import compute_edca_multiplier, calculate_weekly_execution
     from market_calendar.holiday_engine import get_best_trading_day
     from advisor.ai_advisor import generate_weekly_advisory
     from portfolio.market_scanner import scan_market_opportunities
+    from data.price_feed import THAI_STOCKS, get_live_market_metrics
     EDCA_MODULES_LOADED = True
 except Exception as e:
     EDCA_MODULES_LOADED = False
@@ -50,6 +64,9 @@ _CACHE_TTL_SEC: float = 300.0  # 5 minutes cache
 _CACHED_ADVISORY: str = ""
 _LAST_ADVISORY_TIME: float = 0.0
 _ADVISORY_TTL_SEC: float = 600.0  # 10 minutes cache
+
+_CACHED_THAI_PRICES: Dict[str, float] = {}
+_LAST_THAI_PRICE_TIME: float = 0.0
 
 
 class EdcaConnector(BaseConnector):
@@ -107,9 +124,9 @@ class EdcaConnector(BaseConnector):
         except Exception:
             # Fallback static opportunities if network drops
             fallback = [
-                {"ticker": "NVDA", "symbol": "NVDA", "current_price": 125.0, "drawdown_pct": -14.2, "rsi14": 46.5, "multiplier": 1.45, "grade": "A", "signal": "เริ่มทยอยสะสมได้ดี (Attractive Dip)", "is_new": True},
-                {"ticker": "VOO", "symbol": "VOO", "current_price": 520.0, "drawdown_pct": -3.5, "rsi14": 54.0, "multiplier": 0.95, "grade": "B", "signal": "ราคาปกติ/โซนสมดุล (Normal Range)", "is_new": True},
-                {"ticker": "QQQ", "symbol": "QQQ", "current_price": 480.0, "drawdown_pct": -5.8, "rsi14": 49.2, "multiplier": 1.10, "grade": "B", "signal": "ราคาปกติ/โซนสมดุล (Normal Range)", "is_new": True},
+                {"ticker": "META", "symbol": "META", "current_price": 610.0, "drawdown_pct": -21.5, "rsi14": 24.0, "multiplier": 1.70, "grade": "A+", "signal": "ช้อนซื้อของลดราคาด่วน (Deep Discount & Oversold)", "is_new": True},
+                {"ticker": "NVDA", "symbol": "NVDA", "current_price": 187.0, "drawdown_pct": -22.0, "rsi14": 30.0, "multiplier": 1.70, "grade": "A+", "signal": "ช้อนซื้อของลดราคาด่วน (Deep Discount & Oversold)", "is_new": True},
+                {"ticker": "QQQ", "symbol": "QQQ", "current_price": 656.0, "drawdown_pct": -13.6, "rsi14": 30.5, "multiplier": 1.30, "grade": "A", "signal": "เริ่มทยอยสะสมได้ดี (Attractive Dip)", "is_new": True},
             ]
             _CACHED_OPPS = fallback
             _LAST_SCAN_TIME = now
@@ -124,17 +141,53 @@ class EdcaConnector(BaseConnector):
             "modules_loaded": EDCA_MODULES_LOADED
         }
 
+    def _price_map(self, opps: List[Dict[str, Any]]) -> Dict[str, float]:
+        """US radar prices plus whole-share Thai SET prices."""
+        global _CACHED_THAI_PRICES, _LAST_THAI_PRICE_TIME
+        import time
+        prices: Dict[str, float] = {}
+        for row in opps or []:
+            ticker = str(row.get("ticker") or "").replace(".BK", "")
+            try:
+                prices[ticker] = float(row.get("current_price"))
+            except (TypeError, ValueError):
+                continue
+        now = time.time()
+        if _CACHED_THAI_PRICES and (now - _LAST_THAI_PRICE_TIME) < _CACHE_TTL_SEC:
+            prices.update(_CACHED_THAI_PRICES)
+            return prices
+        if EDCA_MODULES_LOADED:
+            thai_prices: Dict[str, float] = {}
+            for ticker in THAI_STOCKS:
+                try:
+                    metrics = get_live_market_metrics(ticker)
+                    thai_prices[ticker] = float(metrics.current_price)
+                except Exception:
+                    continue
+            if thai_prices:
+                _CACHED_THAI_PRICES = thai_prices
+                _LAST_THAI_PRICE_TIME = now
+                prices.update(thai_prices)
+        return prices
+
+    def _live_multiplier(self, opps: Optional[List[Dict[str, Any]]] = None) -> float:
+        """Average EDCA multiplier from the live scanner — never the old 0.85 stub."""
+        rows = opps if opps is not None else self._get_scanner_opportunities()
+        vals = []
+        for row in rows or []:
+            try:
+                vals.append(float(row.get("multiplier")))
+            except (TypeError, ValueError):
+                continue
+        if not vals:
+            return 1.0
+        return round(max(0.5, min(2.0, sum(vals) / len(vals))), 2)
+
     def get_summary(self) -> Dict[str, Any]:
         total_usd = sum(h["market_value_usd"] for h in DEFAULT_HOLDINGS_DATA)
         total_thb = total_usd * self.thb_usd_rate
 
-        multiplier = 0.85
-        if EDCA_MODULES_LOADED:
-            try:
-                multiplier = compute_edca_multiplier(price=570.0, ema200=550.0, dd_pct=-8.5, rsi=52.0)
-            except Exception:
-                multiplier = 1.05
-
+        multiplier = self._live_multiplier() if EDCA_MODULES_LOADED else 1.0
         invest_amount = self.base_weekly_budget * multiplier
 
         return {
@@ -165,6 +218,8 @@ class EdcaConnector(BaseConnector):
         invest_amount = summary["recommended_weekly_thb"]
         buffer_action = "Drawdown from buffer"
         raw_opps = self._get_scanner_opportunities()
+        previous_week = None
+        week_id = None
 
         if EDCA_MODULES_LOADED:
             try:
@@ -175,7 +230,7 @@ class EdcaConnector(BaseConnector):
                 trading_day_str = f"{best_day_date.strftime('%Y-%m-%d')} ({best_day_info}) ช่วงเวลา 21:45 - 23:00 น."
                 best_day = best_day_info
 
-                mult = compute_edca_multiplier(price=570.0, ema200=550.0, dd_pct=-8.5, rsi=52.0)
+                mult = self._live_multiplier(raw_opps)
                 multiplier = mult
                 current_buffer = 400.0
                 plan = calculate_weekly_execution(
@@ -191,7 +246,8 @@ class EdcaConnector(BaseConnector):
                     holding_objs,
                     available_budget=plan.invest_amount,
                     opportunities=raw_opps,
-                    min_order_thb=self.min_order_thb
+                    min_order_thb=self.min_order_thb,
+                    prices=self._price_map(raw_opps),
                 )
                 allocations_data = [
                     {
@@ -199,7 +255,8 @@ class EdcaConnector(BaseConnector):
                         "allocated_thb": round(a.allocated_thb, 2),
                         "percentage": round(a.percentage, 1),
                         "action": a.action,
-                        "reason": a.reason
+                        "reason": a.reason,
+                        "shares": int(getattr(a, "shares", 0) or 0),
                     }
                     for a in allocations
                 ]
@@ -211,8 +268,45 @@ class EdcaConnector(BaseConnector):
                     advisory_text = generate_weekly_advisory(plan, allocations, trading_day_str)
                     _CACHED_ADVISORY = advisory_text
                     _LAST_ADVISORY_TIME = now_ts
+                week_id = week_id_for(today) if ARCHIVE_LOADED else None
+                if ARCHIVE_LOADED and week_id:
+                    start, end = week_bounds(week_id)
+                    save_snapshot({
+                        "week_id": week_id,
+                        "week_start": start.isoformat(),
+                        "week_end": end.isoformat(),
+                        "as_of": today.isoformat(),
+                        "reconstructed": False,
+                        "source": "hub-connector",
+                        "trading_day": {
+                            "date": best_day_date.isoformat(),
+                            "reason": best_day_info,
+                            "full_string": trading_day_str,
+                        },
+                        "execution_plan": {
+                            "base_budget": plan.base_budget,
+                            "multiplier": plan.multiplier,
+                            "invest_amount": plan.invest_amount,
+                            "buffer_delta": plan.buffer_delta,
+                            "new_buffer": plan.new_buffer,
+                        },
+                        "allocations": allocations_data,
+                        "scanner_opportunities": raw_opps,
+                        "advisory": advisory_text,
+                    })
             except Exception as e:
                 advisory_text = f"ระบบประมวลผลพื้นฐาน: แนะนำเข้าซื้อตามน้ำหนักพอร์ตปกติ ({str(e)})"
+
+        if ARCHIVE_LOADED:
+            try:
+                prev_snap = load_snapshot(previous_week_id())
+                if prev_snap:
+                    previous_week = snapshot_to_hub(prev_snap)
+                if week_id is None:
+                    import datetime as _dt
+                    week_id = week_id_for(_dt.date.today())
+            except Exception:
+                previous_week = None
 
         return {
             "summary": summary,
@@ -232,5 +326,7 @@ class EdcaConnector(BaseConnector):
                 "description": "เกณฑ์คำสั่งซื้อขั้นต่ำ 50 บาทต่อออเดอร์ของ Dime! ระบบจะรวมงบหรือทบเข้า Cash Buffer หากจัดสรรแล้วได้ต่ำกว่า 50 บาท"
             },
             "advisory": advisory_text,
-            "optimal_day": best_day
+            "optimal_day": best_day,
+            "week_id": week_id,
+            "previous_week": previous_week,
         }

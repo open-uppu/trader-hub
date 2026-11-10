@@ -31,6 +31,7 @@ def test_api_edca_details(client):
     data = response.json()
     assert "holdings" in data
     assert "weekly_execution" in data
+    assert "previous_week" in data
 
 
 def test_api_daytrad_details(client):

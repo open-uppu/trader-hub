@@ -9,7 +9,9 @@ const next = require("next");
 const dev = process.argv.includes("--dev");
 process.env.NODE_ENV = dev ? "development" : "production";
 
-const hostname = process.env.HOSTNAME || "0.0.0.0";
+// Docker sets HOSTNAME to the container id. Binding to that address only
+// makes published ports return ERR_EMPTY_RESPONSE on Windows.
+const hostname = process.env.BIND_HOST || "0.0.0.0";
 const port = parseInt(process.env.PORT || "3000", 10);
 
 function backendOrigin() {
@@ -31,6 +33,10 @@ function proxyUpgrade(req, socket, head) {
     return;
   }
   const headers = { ...req.headers, host: target.host };
+  // Chrome offers permessage-deflate. A byte proxy that rewrites the 101
+  // response drops or doubles that extension and the browser reports
+  // "Invalid frame header". Force uncompressed frames.
+  delete headers["sec-websocket-extensions"];
   const proxyReq = http.request({
     protocol: target.protocol,
     hostname: target.hostname,

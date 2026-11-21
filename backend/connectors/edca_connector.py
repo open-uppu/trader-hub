@@ -242,13 +242,20 @@ class EdcaConnector(BaseConnector):
                 buffer_action = "Deposit to buffer" if plan.buffer_delta > 0 else "Drawdown from buffer"
 
                 # Filter and allocate considering opportunities & Dime 50 THB minimum order rule
-                allocations = filter_and_allocate(
-                    holding_objs,
-                    available_budget=plan.invest_amount,
-                    opportunities=raw_opps,
-                    min_order_thb=self.min_order_thb,
-                    prices=self._price_map(raw_opps),
-                )
+                alloc_kwargs = {
+                    "holdings": holding_objs,
+                    "available_budget": plan.invest_amount,
+                    "opportunities": raw_opps,
+                    "min_order_thb": self.min_order_thb,
+                }
+                try:
+                    import inspect
+                    if "prices" in inspect.signature(filter_and_allocate).parameters:
+                        alloc_kwargs["prices"] = self._price_map(raw_opps)
+                    allocations = filter_and_allocate(**alloc_kwargs)
+                except TypeError:
+                    alloc_kwargs.pop("prices", None)
+                    allocations = filter_and_allocate(**alloc_kwargs)
                 allocations_data = [
                     {
                         "ticker": a.ticker,

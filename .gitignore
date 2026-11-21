@@ -3,3 +3,10 @@ dist
 .turbo
 *.sqlite
 .env*
+.next
+.DS_Store
+*.log
+coverage
+__pycache__/
+*.pyc
+agent-*

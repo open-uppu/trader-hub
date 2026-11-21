@@ -4,6 +4,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     image: trader-hub-backend:latest
+    pull_policy: build
     container_name: trader_hub_backend
     restart: unless-stopped
     ports:
@@ -23,6 +24,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     image: trader-hub-frontend:latest
+    pull_policy: build
     container_name: trader_hub_frontend
     restart: unless-stopped
     ports:
